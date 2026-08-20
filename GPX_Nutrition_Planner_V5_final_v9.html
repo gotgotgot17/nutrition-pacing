@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GPX Nutrition Planner V5</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f4f1;color:#161616}
+header{background:#111;color:#fff;padding:18px 22px}header h1{margin:0;font-size:23px}header p{margin:5px 0 0;color:#bbb}
+main{display:grid;grid-template-columns:390px 1fr;min-height:calc(100vh - 78px)}
+aside{background:#fff;border-right:1px solid #ddd;padding:16px;overflow:auto}
+section{min-width:0}.card{background:#fafafa;border:1px solid #ddd;border-radius:12px;padding:14px;margin-bottom:14px}
+h2{font-size:16px;margin:0 0 10px}label{display:block;font-size:12px;font-weight:700;margin:10px 0 5px}
+input,select,button{width:100%;padding:9px;border:1px solid #ccc;border-radius:8px;font-size:13px}
+button{background:#111;color:#fff;font-weight:700;cursor:pointer;margin-top:8px}button.secondary{background:#fff;color:#111}
+button.danger{background:#8b1e1e}.small{font-size:11px;color:#666}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+#map{height:52vh;min-height:420px}.profile{background:#fff;border:1px solid #ddd;border-radius:12px;margin:14px;padding:14px}
+.chart{height:230px}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.stat{background:#fff;border:1px solid #ddd;border-radius:8px;padding:9px;font-size:11px}.stat b{display:block;font-size:16px;margin-top:3px}
+.product{background:#fff;border:1px solid #ddd;border-radius:8px;padding:8px;margin:6px 0}.product-row{display:grid;grid-template-columns:1fr 55px 55px 70px;gap:5px;align-items:center;font-size:11px}
+.ravito{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #ddd;font-size:12px}
+.plan-product{min-width:145px;padding:6px;border:1px solid #ccc;border-radius:7px;font-size:11px}
+.strategy-head{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.subtotal-row{background:#f0f0ed;color:#333;font-size:10px}
+.strategy-head .pill{background:#e9e9e6}
+@media print{aside{display:none!important}section{width:100%}#map{display:none}.profile{margin:0 0 14px}.card{break-inside:avoid}}
+
+table{width:100%;border-collapse:collapse;font-size:12px}th,td{padding:7px;border-bottom:1px solid #ddd;text-align:left}
+.notice{font-size:11px;color:#666}.hidden{display:none}.pill{display:inline-block;background:#e9e9e6;padding:3px 6px;border-radius:20px;font-size:10px}
+@media(max-width:850px){main{grid-template-columns:1fr}aside{border-right:0}.stats{grid-template-columns:1fr 1fr}#map{height:48vh}}
+.strategy-products{min-width:190px}.strategy-products label{cursor:pointer}.strategy-products input[type=number]{width:52px;padding:4px;border:1px solid #ccc;border-radius:6px}
+.readonly-time{padding:9px 10px;border:1px solid #ccc;border-radius:7px;background:#f3f3f1;font-weight:700;min-height:18px}.strategy-score{font-weight:700}
+</style>
+</head>
+<body>
+<header><h1>GPX Nutrition Planner — V5</h1><p>Trace GPX · ravitaillements · nutrition · pacing · stratégie PDF</p></header>
+<main>
+<aside>
+<div class="card">
+<h2>1. Importer la course</h2>
+<input id="gpx" type="file" accept=".gpx,application/gpx+xml">
+<div class="grid2">
+<div><label>Temps estimé / temps cible</label><input id="targetTime" type="time" value="04:00"></div>
+<div><label>Glucides (g/h)</label><input id="carbs" type="number" min="0" step="5" value="70"></div>
+</div>
+<label>Intervalle entre prises (min)</label><input id="interval" type="number" min="5" step="5" value="30">
+</div>
+
+<div class="card">
+<h2>2. Ravitaillements</h2>
+<p class="notice">Clique sur la trace pour ajouter un ravitaillement. Le point le plus proche de la trace est automatiquement sélectionné.</p>
+<button id="addRavito" class="secondary">+ Ajouter un ravitaillement</button>
+<div id="ravitos"></div>
+</div>
+
+<div class="card">
+<h2>3. Ma nutrition</h2>
+<div class="product-row" style="font-weight:700;color:#666"><span>Produit</span><span>Gluc.</span><span>Kcal</span><span></span></div><div id="products"></div>
+<button id="addProduct" class="secondary">+ Ajouter un produit</button>
+<p class="notice">Définis les produits disponibles. À chaque prise, tu peux sélectionner plusieurs produits : leurs glucides et kcal s'additionnent automatiquement jusqu'à l'objectif.</p>
+</div>
+
+<div class="card">
+<h2>4. Stratégie de pacing</h2>
+<div><label>Temps cible</label><div class="readonly-time" id="targetTimeDisplay">04:00</div></div>
+<label>Heure de départ</label><input id="startTime" type="time" value="08:00">
+<p class="notice">Le temps total visé est saisi au format heures:minutes. Le pacing et les temps de passage sont calculés automatiquement selon la distance de la trace.</p>
+</div>
+
+<div class="card">
+<h2>5. Générer & exporter</h2>
+<button id="generate">Générer la stratégie</button>
+<button id="download" class="secondary">⬇ Exporter le PDF</button>
+</div>
+
+<div id="statsCard" class="card hidden">
+<div class="stats">
+<div class="stat">Distance<b id="dist">—</b></div><div class="stat">D+<b id="dplus">—</b></div>
+<div class="stat">Alt. max<b id="maxalt">—</b></div><div class="stat">Glucides<b id="totalcarbs">—</b></div>
+</div>
+</div><div id="msg" class="notice">Importe un GPX pour commencer.</div>
+</aside>
+
+<section>
+<div id="map"></div>
+<div class="profile"><h2>Profil altimétrique</h2><div class="chart"><canvas id="elevChart"></canvas></div></div>
+  <div class="profile">
+    <h2>Stratégie</h2>
+    <div style="overflow:auto"><table><thead><tr><th>Temps</th><th>Heure</th><th>Km</th><th>Alt.</th><th>D+ cumulé</th><th>Vitesse moy.</th><th>Événement</th><th>Objectif</th><th>Cumul</th><th>Écart</th><th>Produits</th></tr></thead><tbody id="plan"></tbody></table></div>
+    <p class="notice">Les produits sont proposés automatiquement pour suivre l'objectif glucidique cumulé. Certaines lignes peuvent volontairement rester sans produit. Tu peux modifier les quantités et le nom de l'événement directement dans la stratégie.</p>
+  </div>
+  <div class="profile">
+    <h2>Résumé des achats</h2>
+    <div id="shoppingSummary" class="notice">Génère la stratégie pour calculer automatiquement les quantités.</div>
+  </div>
+
+</section>
+</main>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script>
+const map=L.map('map').setView([45.76,4.84],12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors'}).addTo(map);
+let track=[],line=null,ravitos=[],nutrition=[],markers=[],chart=null,addingRavito=false;
+
+const products=[
+ {id:1,name:"Gel",carbs:25,sodium:0,calories:100,selected:true,qty:4},
+ {id:2,name:"Barre",carbs:30,sodium:100,calories:150,selected:true,qty:2},
+ {id:3,name:"Boisson",carbs:30,sodium:300,calories:120,selected:false,qty:0},
+ {id:4,name:"Compote",carbs:20,sodium:0,calories:80,selected:false,qty:0}
+];
+
+
+function renderProducts(){
+  const box=document.getElementById('products');box.innerHTML='';
+  products.forEach((p,i)=>{
+    const d=document.createElement('div');d.className='product';
+    d.innerHTML=`<div class="product-row">
+      <span><input type="checkbox" ${p.selected?'checked':''} data-i="${i}" class="psel"> ${p.name}</span>
+      <span>${p.carbs}g</span><span>${p.calories} kcal</span>
+      <button class="danger pdel" data-i="${i}" title="Supprimer le produit" style="width:auto;margin:0;padding:5px 8px">×</button>
+    </div>`;
+    box.appendChild(d);
+  });
+  box.querySelectorAll('.psel').forEach(x=>x.onchange=()=>products[x.dataset.i].selected=x.checked);
+  box.querySelectorAll('.pdel').forEach(x=>x.onclick=()=>{
+    const i=+x.dataset.i;
+    if(confirm(`Supprimer "${products[i].name}" ?`)){
+      products.splice(i,1);
+      renderProducts();
+      if(window.currentPlan) generate();
+    }
+  });
+}
+
+renderProducts();
+
+document.getElementById('addProduct').onclick=()=>{
+  const name=prompt("Nom du produit ?");
+  if(!name)return;
+  const carbs=+prompt("Glucides par unité (g)","25")||0;
+   const calories=+prompt("Calories par unité","100")||0;
+   products.push({id:Date.now(),name,carbs,sodium:0,calories,selected:true,qty:0});
+  renderProducts();
+};
+
+function selectedProducts(){
+  return products.filter(p=>p.selected); 
+}
+
+function productOptions(selectedIds=[]){
+  const ids=Array.isArray(selectedIds)?selectedIds.map(String):[];
+  return selectedProducts().map(p=>`<option value="${p.id}" ${ids.includes(String(p.id))?'selected':''}>${p.name} · ${p.carbs} g · ${p.calories} kcal</option>`).join('');
+}
+
+function strategyProductEditor(productIds=[]){
+  const counts={};
+  (productIds||[]).forEach(id=>counts[String(id)]=(counts[String(id)]||0)+1);
+  return selectedProducts().map(p=>{
+    const q=counts[String(p.id)]||0;
+    return `<label style="display:flex;align-items:center;gap:5px;margin:3px 0;font-size:11px;font-weight:400">
+      <input type="checkbox" class="sp-check" data-pid="${p.id}" ${q>0?'checked':''}>
+      <span style="flex:1">${p.name} · ${p.carbs} g</span>
+      <input type="number" class="sp-qty" data-pid="${p.id}" min="0" value="${q}" style="width:52px;padding:4px">
+    </label>`;
+  }).join('');
+}
+function selectedProductList(ids){
+  return (ids||[]).map(id=>productById(id)).filter(Boolean);
+}
+
+function nutritionTotals(ids){
+  const ps=selectedProductList(ids);
+  return {
+    carbs: ps.reduce((s,p)=>s+p.carbs,0),
+    calories: ps.reduce((s,p)=>s+p.calories,0)
+  };
+}
+
+function formatClock(start, elapsedMin){
+  if(!start) return '—';
+  const [h,m]=start.split(':').map(Number);
+  const total=h*60+m+elapsedMin;
+  const hh=Math.floor(total/60)%24, mm=Math.round(total%60);
+  return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+}
+
+function cumulativeTotals(plan, upto){
+  return plan.slice(0,upto+1).reduce((a,x)=>{
+    a.carbs+=x.actualCarbs||0; a.calories+=x.actualCalories||0;
+    a.target+=x.targetCarbs||0; return a;
+  },{carbs:0,calories:0,target:0});
+}
+
+function formatDurationHM(min){
+  min=Math.max(0,Math.round(min||0));
+  const h=Math.floor(min/60), m=min%60;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+function formatTime(min){
+  const m=Math.floor(min), s=Math.round((min-m)*60);
+  return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}${s?'.'+String(s).padStart(2,'0'):''}`;
+}
+
+function pacingForKm(km){
+  if(!track.length) return 0;
+  const hours=+document.getElementById('targetTime').value||0;
+  const minutes=+document.getElementById('targetTime').value||0;
+  const totalMin=hours*60+minutes;
+  return totalMin*(km/(track[track.length-1].dist/1000));
+}
+
+function productById(id){
+  return products.find(p=>String(p.id)===String(id));
+}
+
+function chooseProductsForTarget(targetCumulative, cumulativeAlready){
+  const selected=selectedProducts().filter(p=>(+p.carbs||0)>0);
+  if(!selected.length) return [];
+
+  // On ne force PAS une prise à chaque intervalle.
+  // Si le cumul est déjà suffisamment proche de l'objectif, on ne met rien.
+  const gap=targetCumulative-cumulativeAlready;
+  const tolerance=Math.max(8, Math.min(18, targetCumulative*0.08));
+  if(gap<=tolerance) return [];
+
+  // Recherche de petites combinaisons (0 à 2 unités par produit).
+  // Le choix varie légèrement d'une prise à l'autre : on évite de toujours
+  // sélectionner le premier produit de la liste lorsqu'il existe plusieurs
+  // solutions proches.
+  let candidates=[];
+  const maxUnitsPerProduct=2;
+
+  function visit(i, carbs, ids, counts){
+    if(i>=selected.length){
+      const projected=cumulativeAlready+carbs;
+      const error=Math.abs(targetCumulative-projected);
+      const overshoot=Math.max(0, projected-targetCumulative);
+      const units=ids.length;
+
+      // Une combinaison vide reste possible, mais seulement si elle est
+      // meilleure que les autres (le test ci-dessus traite déjà le cas proche).
+      let varietyPenalty=0;
+      selected.forEach((p,j)=>{
+        const c=counts[j]||0;
+        if(c>0) varietyPenalty += (j%3)*0.15 + Math.max(0,c-1)*0.35;
+      });
+
+      candidates.push({ids:ids.slice(),carbs,error,overshoot,units,
+        score:error + overshoot*0.35 + units*0.08 + varietyPenalty});
+      return;
+    }
+    const p=selected[i];
+    for(let q=0;q<=maxUnitsPerProduct;q++){
+      const next=ids.slice();
+      for(let k=0;k<q;k++) next.push(String(p.id));
+      const nc=counts.slice(); nc[i]=q;
+      visit(i+1,carbs+q*(+p.carbs||0),next,nc);
+    }
+  }
+  visit(0,0,[],[]);
+
+  // Exclure les combinaisons qui ajoutent beaucoup trop de glucides.
+  const reasonable=candidates.filter(c=>c.ids.length===0 || c.overshoot<=Math.max(10,gap*0.30));
+  const pool=(reasonable.length?reasonable:candidates)
+    .filter(c=>c.ids.length>0)
+    .sort((a,b)=>a.score-b.score);
+
+  if(!pool.length) return [];
+
+  // Parmi les solutions quasi équivalentes, on fait tourner légèrement
+  // les préférences pour varier les produits utilisés.
+  const bestScore=pool[0].score;
+  const near=pool.filter(c=>c.score<=bestScore+Math.max(1.5,bestScore*0.08));
+  const seed=Math.floor(targetCumulative/Math.max(1,gap)) + Math.floor(cumulativeAlready/10);
+  return near[Math.abs(seed)%near.length].ids;
+}
+
+
+function formatProductCounts(ids){
+  const c={};
+  (ids||[]).forEach(id=>{
+    const p=productById(id);
+    if(p)c[p.name]=(c[p.name]||0)+1;
+  });
+  return Object.entries(c).map(([n,q])=>`${q}× ${n}`).join(' + ')||'À définir';
+}
+
+
+function parseGPX(xmlText){
+  const xml = new DOMParser().parseFromString(xmlText, "application/xml");
+  if(xml.querySelector("parsererror")) throw new Error("Le fichier GPX est invalide ou illisible.");
+
+  const pts = Array.from(xml.querySelectorAll("trkpt")).map(pt=>{
+    const lat = parseFloat(pt.getAttribute("lat"));
+    const lon = parseFloat(pt.getAttribute("lon"));
+    const eleNode = pt.querySelector("ele");
+    const ele = eleNode ? parseFloat(eleNode.textContent) : 0;
+    if(!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    return {lat,lon,ele:Number.isFinite(ele)?ele:0,dist:0};
+  }).filter(Boolean);
+
+  if(pts.length < 2) throw new Error("Aucune trace exploitable trouvée dans ce fichier GPX.");
+
+  let d=0;
+  pts[0].dist=0;
+  for(let i=1;i<pts.length;i++){
+    d += haversine(pts[i-1].lat,pts[i-1].lon,pts[i].lat,pts[i].lon);
+    pts[i].dist=d;
+  }
+  return pts;
+}
+
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371000, rad=Math.PI/180;
+  const p1=lat1*rad,p2=lat2*rad;
+  const dp=(lat2-lat1)*rad, dl=(lon2-lon1)*rad;
+  const a=Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+  return 2*R*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function calc(){
+  if(!track.length) return {dist:0,dplus:0,max:0,min:0};
+  let dplus=0,max=-Infinity,min=Infinity;
+  for(let i=0;i<track.length;i++){
+    const e=Number(track[i].ele)||0;
+    max=Math.max(max,e);
+    min=Math.min(min,e);
+    if(i>0){
+      const de=e-(Number(track[i-1].ele)||0);
+      if(de>0) dplus+=de;
+    }
+  }
+  return {dist:track[track.length-1].dist||0,dplus,max,min};
+}
+
+function cumulativeDplus(index){
+  if(!track.length || index<0) return 0;
+  let d=0;
+  for(let i=1;i<=index;i++){
+    const de=(Number(track[i].ele)||0)-(Number(track[i-1].ele)||0);
+    if(de>0) d+=de;
+  }
+  return d;
+}
+function dplusAtDistance(targetDist){
+  if(!track.length) return 0;
+  let d=0;
+  for(let i=1;i<track.length;i++){
+    if(track[i].dist>targetDist) break;
+    const de=(Number(track[i].ele)||0)-(Number(track[i-1].ele)||0);
+    if(de>0) d+=de;
+  }
+  return d;
+}
+function averageSpeedKmh(km, elapsedMin){
+  return elapsedMin>0 ? km/(elapsedMin/60) : 0;
+}
+
+function pointAt(targetDist){
+  if(!track.length) return null;
+  if(targetDist<=0) return {...track[0],dist:0};
+  const total=track[track.length-1].dist;
+  if(targetDist>=total) return {...track[track.length-1],dist:total};
+
+  let lo=0,hi=track.length-1;
+  while(lo<hi){
+    const mid=Math.floor((lo+hi)/2);
+    if(track[mid].dist<targetDist) lo=mid+1;
+    else hi=mid;
+  }
+  const b=track[lo],a=track[lo-1];
+  const span=b.dist-a.dist;
+  const f=span ? (targetDist-a.dist)/span : 0;
+  return {
+    lat:a.lat+(b.lat-a.lat)*f,
+    lon:a.lon+(b.lon-a.lon)*f,
+    ele:a.ele+(b.ele-a.ele)*f,
+    dist:targetDist
+  };
+}
+
+function renderMap(){
+  if(!track.length) return;
+  if(line) map.removeLayer(line);
+  line=L.polyline(track.map(p=>[p.lat,p.lon]),{weight:5}).addTo(map);
+  map.fitBounds(line.getBounds(),{padding:[20,20]});
+
+  markers.forEach(m=>map.removeLayer(m));
+  markers=[];
+  ravitos.forEach(r=>{
+    const m=L.marker([r.lat,r.lon]).addTo(map).bindPopup(r.name);
+    markers.push(m);
+  });
+}
+
+function renderChart(){
+  const canvas=document.getElementById('elevChart');
+  if(!canvas || !track.length) return;
+  if(chart) chart.destroy();
+
+  const step=Math.max(1,Math.ceil(track.length/500));
+  const labels=[],data=[];
+  for(let i=0;i<track.length;i+=step){
+    labels.push((track[i].dist/1000).toFixed(1));
+    data.push(Math.round(track[i].ele));
+  }
+
+  // Positionne les ravitaillements sur le même axe kilométrique que le profil.
+  const ravitoPoints=ravitos.map(r=>{
+    let best=0,bestDiff=Infinity;
+    for(let i=0;i<labels.length;i++){
+      const d=Math.abs(parseFloat(labels[i])*1000-r.dist);
+      if(d<bestDiff){bestDiff=d;best=i;}
+    }
+    return {x:best,y:Math.round(r.ele),name:r.name,km:r.dist/1000};
+  });
+
+  const ravitoPlugin={
+    id:'ravitoMarkers',
+    afterDatasetsDraw(chart){
+      const meta=chart.getDatasetMeta(1);
+      if(!meta || !meta.data) return;
+      const ctx=chart.ctx;
+      ctx.save();
+      meta.data.forEach((pt,i)=>{
+        const r=ravitoPoints[i];
+        if(!r) return;
+        const x=pt.x,y=pt.y;
+        // marqueur
+        ctx.beginPath();
+        ctx.arc(x,y,5,0,Math.PI*2);
+        ctx.fillStyle='#fff';
+        ctx.fill();
+        ctx.lineWidth=2;
+        ctx.strokeStyle='#222';
+        ctx.stroke();
+        // ligne verticale discrète jusqu'au bas du graphique
+        ctx.beginPath();
+        ctx.moveTo(x,y+6);
+        ctx.lineTo(x,chart.chartArea.bottom);
+        ctx.setLineDash([3,3]);
+        ctx.strokeStyle='#777';
+        ctx.lineWidth=1;
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // nom du ravitaillement
+        ctx.font='bold 10px Arial';
+        ctx.textAlign='center';
+        ctx.textBaseline='bottom';
+        ctx.fillStyle='#222';
+        ctx.fillText(r.name,x,y-8);
+        ctx.font='9px Arial';
+        ctx.fillText(r.km.toFixed(1)+' km',x,y-20);
+      });
+      ctx.restore();
+    }
+  };
+
+  const ctx=canvas.getContext('2d');
+  chart=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {
+          label:'Altitude (m)',
+          data,
+          fill:true,
+          tension:.15,
+          pointRadius:0
+        },
+        {
+          type:'scatter',
+          label:'Ravitaillements',
+          data:ravitoPoints,
+          parsing:false,
+          pointRadius:6,
+          pointHoverRadius:8,
+          showLine:false
+        }
+      ]
+    },
+    plugins:[ravitoPlugin],
+    options:{
+      responsive:true,
+      maintainAspectRatio:false,
+      scales:{
+        x:{title:{display:true,text:'Distance (km)'}},
+        y:{title:{display:true,text:'Altitude (m)'}}
+      },
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label(ctx){
+              const r=ravitoPoints[ctx.dataIndex];
+              return r ? `${r.name} · km ${r.km.toFixed(1)} · ${r.y} m` : '';
+            }
+          }
+        }
+      }
+    }
+  });
+}
+
+function renderRavitos(){
+  const box=document.getElementById('ravitos');
+  if(!box) return;
+  box.innerHTML='';
+  ravitos.forEach((r,i)=>{
+    const d=document.createElement('div');
+    d.className='ravito';
+    d.innerHTML=`<span><b>${r.name}</b><br><span class="small">${(r.dist/1000).toFixed(1)} km · ${Math.round(r.ele)} m</span></span>
+      <button class="danger" data-i="${i}" style="width:auto;margin:0;padding:5px 8px">×</button>`;
+    d.querySelector('button').onclick=()=>{
+      ravitos.splice(i,1);
+      renderRavitos();
+      renderMap();
+      renderChart();
+      if(window.currentPlan) generate();
+    };
+    box.appendChild(d);
+  });
+}
+
+function addRavitoAt(latlng){
+  if(!track.length) return;
+  let best=pointAt(0),bd=Infinity;
+  for(const p of track){
+    const d=haversine(latlng.lat,latlng.lng,p.lat,p.lon);
+    if(d<bd){bd=d;best=p;}
+  }
+  const name=prompt("Nom du ravitaillement ?",`Ravitaillement ${ravitos.length+1}`);
+  if(!name) return;
+  ravitos.push({name,lat:best.lat,lon:best.lon,ele:best.ele,dist:best.dist});
+  ravitos.sort((a,b)=>a.dist-b.dist);
+  renderRavitos();
+  renderMap();
+  renderChart();
+  if(window.currentPlan) generate();
+}
+
+map.on('click',e=>{
+  if(addingRavito){
+    addRavitoAt(e.latlng);
+    addingRavito=false;
+    document.getElementById('addRavito').textContent='+ Ajouter un ravitaillement';
+  }
+});
+
+document.getElementById('addRavito').onclick=()=>{
+  if(!track.length){alert("Importe d'abord une trace GPX.");return;}
+  addingRavito=!addingRavito;
+  document.getElementById('addRavito').textContent=addingRavito
+    ?"Clique sur la trace pour choisir le ravitaillement"
+    :"+ Ajouter un ravitaillement";
+};
+
+function syncTargetTimeDisplay(){
+  const el=document.getElementById('targetTimeDisplay'), input=document.getElementById('targetTime');
+  if(el && input) el.textContent=input.value||'00:00';
+}
+document.getElementById('targetTime')?.addEventListener('input',syncTargetTimeDisplay);
+syncTargetTimeDisplay();
+
+function generate(){
+  if(!track.length){alert("Importe d'abord une trace GPX.");return;}
+
+  const c=calc();
+  const carbsH=+document.getElementById('carbs').value||0;
+  const interval=Math.max(1,+document.getElementById('interval').value||30);
+  const targetTime=document.getElementById('targetTime').value||'04:00';
+  const parts=targetTime.split(':').map(Number);
+  const duration=(parts[0]||0)*60+(parts[1]||0);
+
+  if(duration<=0){alert("Indique un temps total visé.");return;}
+
+  nutrition=[];
+  const plan=[];
+
+  for(let elapsed=interval; elapsed<duration; elapsed+=interval){
+    const p=pointAt(c.dist*elapsed/duration);
+    const r=ravitos.find(x=>Math.abs(x.dist-p.dist)<=Math.max(100,c.dist*0.01));
+    const cumulativeTarget=Math.round(carbsH*elapsed/60);
+    const cumulativeAlready=nutrition.reduce((s,n)=>s+nutritionTotals(n.productIds||[]).carbs,0);
+    const ids=chooseProductsForTarget(cumulativeTarget,cumulativeAlready);
+    const totals=nutritionTotals(ids);
+    const km=p.dist/1000;
+
+    nutrition.push({
+      lat:p.lat,lon:p.lon,time:Math.round(elapsed),
+      label:ids.length?formatProductCounts(ids):"À définir",
+      productIds:ids
+    });
+
+    plan.push({
+      t:elapsed,p,event:r?r.name:'',
+      targetCarbs:Math.round(carbsH*elapsed/60)-Math.round(carbsH*(elapsed-interval)/60),
+      productIds:ids,
+      actualCarbs:totals.carbs,
+      actualCalories:totals.calories,
+      split:formatTime(elapsed),
+      clock:formatClock(document.getElementById('startTime').value,elapsed),
+      km,
+      elapsedMin:elapsed,
+      dplus:dplusAtDistance(p.dist),
+      speed:averageSpeedKmh(km,elapsed),
+      subtotal:{carbs:0,calories:0,target:0}
+    });
+  }
+
+  // Always include a final nutrition point at the target time if it is not already there.
+  if(!plan.length || plan[plan.length-1].t<duration){
+    const elapsed=duration;
+    const p=pointAt(c.dist);
+    const r=ravitos.find(x=>Math.abs(x.dist-p.dist)<=Math.max(100,c.dist*0.01));
+    const cumulativeTarget=Math.round(carbsH*elapsed/60);
+    const cumulativeAlready=nutrition.reduce((s,n)=>s+nutritionTotals(n.productIds||[]).carbs,0);
+    const ids=chooseProductsForTarget(cumulativeTarget,cumulativeAlready);
+    const totals=nutritionTotals(ids);
+    const km=p.dist/1000;
+    nutrition.push({lat:p.lat,lon:p.lon,time:elapsed,label:ids.length?formatProductCounts(ids):"À définir",productIds:ids});
+    const prevTarget=plan.length?plan.reduce((s,x)=>s+x.targetCarbs,0):0;
+    plan.push({
+      t:elapsed,p,event:r?r.name:'',
+      targetCarbs:Math.max(0,Math.round(carbsH*duration/60)-prevTarget),
+      productIds:ids,actualCarbs:totals.carbs,actualCalories:totals.calories,
+      split:formatTime(elapsed),clock:formatClock(document.getElementById('startTime').value,elapsed),
+      km,elapsedMin:elapsed,dplus:dplusAtDistance(p.dist),speed:averageSpeedKmh(km,elapsed),
+      subtotal:{carbs:0,calories:0,target:0}
+    });
+  }
+
+  ravitos.forEach(r=>{
+    let best=null,bd=Infinity;
+    plan.forEach(x=>{const d=Math.abs(x.p.dist-r.dist);if(d<bd){bd=d;best=x}});
+    if(best)best.event=r.name;
+  });
+
+  plan.forEach((x,i)=>x.subtotal=cumulativeTotals(plan,i));
+
+  document.getElementById('plan').innerHTML=plan.map((x,i)=>{
+    const totals=nutritionTotals(x.productIds||[]);
+    const s=x.subtotal;
+    const delta=s.carbs-s.target;
+    return `<tr data-plan-index="${i}">
+      <td>${formatDurationHM(x.elapsedMin)}</td>
+      <td>${x.clock}</td>
+      <td>${x.km.toFixed(1)}</td>
+      <td>${Math.round(x.p.ele)} m</td>
+      <td>${Math.round(x.dplus)} m</td>
+      <td>${x.speed.toFixed(1)} km/h</td>
+      <td><input class="plan-event" data-i="${i}" value="${String(x.event||'').replace(/"/g,'&quot;')}" placeholder="Événement" style="width:120px;padding:5px"></td>
+      <td>${s.target} g</td>
+      <td>${s.carbs} g</td>
+      <td>${delta>=0?'+':''}${delta} g</td>
+      <td><div class="strategy-products" data-i="${i}">${strategyProductEditor(x.productIds||[])}</div>
+          <div class="small product-total">${totals.carbs} g · ${totals.calories} kcal</div></td>
+    </tr>`;
+  }).join('');
+
+  const refreshAll=()=>{
+    plan.forEach((x,j)=>x.subtotal=cumulativeTotals(plan,j));
+    document.querySelectorAll('#plan tr[data-plan-index]').forEach(row=>{
+      const j=+row.dataset.planIndex,x=plan[j],s=x.subtotal,delta=s.carbs-s.target;
+      const cells=row.querySelectorAll('td');
+      if(cells.length>=10){
+        cells[7].textContent=`${s.target} g`;
+        cells[8].textContent=`${s.carbs} g`;
+        cells[9].textContent=`${delta>=0?'+':''}${delta} g`;
+      }
+      const prod=row.querySelector('.product-total');
+      const totals=nutritionTotals(x.productIds||[]);
+      if(prod) prod.textContent=`${totals.carbs} g · ${totals.calories} kcal`;
+    });
+    updateShoppingSummary();
+  };
+
+  document.querySelectorAll('.strategy-products').forEach(box=>{
+    const updateRow=()=>{
+      const i=+box.dataset.i,ids=[];
+      box.querySelectorAll('.sp-qty').forEach(q=>{
+        const n=Math.max(0,+q.value||0);
+        const ch=box.querySelector(`.sp-check[data-pid="${q.dataset.pid}"]`);
+        if(ch)ch.checked=n>0;
+        for(let k=0;k<n;k++)ids.push(String(q.dataset.pid));
+      });
+      plan[i].productIds=ids;
+      const totals=nutritionTotals(ids);
+      plan[i].actualCarbs=totals.carbs;
+      plan[i].actualCalories=totals.calories;
+      if(nutrition[i]){nutrition[i].productIds=ids;nutrition[i].label=selectedProductList(ids).map(p=>p.name).join(' + ')||'À définir';}
+      refreshAll();
+    };
+    box.querySelectorAll('.sp-check').forEach(ch=>ch.onchange=()=>{
+      const q=box.querySelector(`.sp-qty[data-pid="${ch.dataset.pid}"]`);
+      if(q)q.value=ch.checked?Math.max(1,+q.value||0):0;
+      updateRow();
+    });
+    box.querySelectorAll('.sp-qty').forEach(q=>q.oninput=updateRow);
+  });
+
+  document.querySelectorAll('.plan-event').forEach(input=>{
+    input.oninput=()=>{
+      const i=+input.dataset.i;
+      if(plan[i]) plan[i].event=input.value;
+    };
+  });
+
+  window.currentPlan=plan;
+  window.currentDuration=duration;
+  window.currentCarbsH=carbsH;
+  updateShoppingSummary();
+  document.getElementById('totalcarbs').textContent=Math.round(duration/60*carbsH)+' g';
+  renderMap();renderChart();
+  document.getElementById('msg').textContent=`Stratégie générée · durée ${formatDurationHM(duration)} · départ ${document.getElementById('startTime').value}.`;
+}
+
+document.getElementById('generate').onclick=generate;
+
+document.getElementById('gpx').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const rd=new FileReader();rd.onload=()=>{
+    try{
+      track=parseGPX(rd.result);const c=calc();
+      if(line)map.removeLayer(line);
+      line=L.polyline(track.map(p=>[p.lat,p.lon]),{weight:5}).addTo(map);
+      map.fitBounds(line.getBounds(),{padding:[20,20]});
+      document.getElementById('dist').textContent=(c.dist/1000).toFixed(1)+' km';
+      document.getElementById('dplus').textContent=Math.round(c.dplus)+' m';
+      document.getElementById('maxalt').textContent=Math.round(c.max)+' m';
+      document.getElementById('statsCard').classList.remove('hidden');
+      renderChart();
+      document.getElementById('msg').textContent="Trace chargée. Ajoute les ravitaillements puis génère la stratégie.";
+    }catch(err){document.getElementById('msg').textContent=err.message}
+  };rd.readAsText(f);
+};
+
+
+function updateShoppingSummary(){
+  const box=document.getElementById('shoppingSummary');
+  if(!box)return;
+  const counts={};
+  (window.currentPlan||[]).forEach(x=>{
+    (x.productIds||[]).forEach(id=>{
+      const p=productById(id); if(!p)return;
+      counts[id]=(counts[id]||{p,qty:0,carbs:0,kcal:0});
+      counts[id].qty++;
+      counts[id].carbs+=p.carbs;
+      counts[id].kcal+=p.calories;
+    });
+  });
+  const rows=Object.values(counts);
+  if(!rows.length){box.textContent="Aucun produit affecté.";return;}
+  box.innerHTML=`<table><thead><tr><th>Produit</th><th>À acheter</th><th>Glucides</th><th>Kcal</th></tr></thead><tbody>${
+    rows.map(x=>`<tr><td>${x.p.name}</td><td><b>${x.qty}</b> unité(s)</td><td>${x.carbs} g</td><td>${x.kcal} kcal</td></tr>`).join('')
+  }</tbody></table>`;
+}
+
+function strategyText(){
+  const c=calc(),h=(window.currentDuration||(+document.getElementById('hours').value*60))/60,
+        ch=window.currentCarbsH||+document.getElementById('carbs').value;
+  let out=`GPX NUTRITION PLANNER V4 — STRATÉGIE\n\n`;
+  out+=`Distance : ${(c.dist/1000).toFixed(1)} km\nD+ : ${Math.round(c.dplus)} m\nAltitude max : ${Math.round(c.max)} m\nTemps cible : ${h.toFixed(2)} h\nObjectif glucides : ${ch} g/h\nGlucides totaux : ${Math.round(h*ch)} g\n\n`;
+  out+=`RAVITAILLEMENTS\n`;
+  ravitos.forEach(r=>out+=`- ${r.name} — ${(r.dist/1000).toFixed(1)} km — ${Math.round(r.ele)} m\n`);
+  out+=`\nPRODUITS DISPONIBLES\n`;
+  selectedProducts().forEach(p=>out+=`- ${p.name} — ${p.carbs} g glucides/unité — ${p.calories} kcal/unité\n`);
+  out+=`\nPACING & NUTRITION\n`;
+  (window.currentPlan||[]).forEach(x=>{
+    const counts={};(x.productIds||[]).forEach(id=>{const p=productById(id);if(p)counts[p.name]=(counts[p.name]||0)+1;});
+    const names=Object.entries(counts).map(([n,q])=>`${q}× ${n}`).join(' + ');
+    out+=`${x.split} | ${x.km.toFixed(1)} km | ${Math.round(x.p.ele)} m | ${x.event||'—'} | ${x.targetCarbs} g | ${names||'À définir'}\n`;
+  });
+  return out;
+}
+
+function drawPdfHeader(doc,title){
+  doc.setFillColor(17,17,17);doc.rect(0,0,210,22,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(16);doc.text(title,12,14);
+  doc.setTextColor(22,22,22);doc.setFontSize(9);
+}
+
+function exportPDF(){
+  if(!track.length){alert("Importe d'abord une trace GPX.");return}
+  if(!window.currentPlan||!window.currentPlan.length)generate();
+  const {jsPDF}=window.jspdf||{};
+  if(!jsPDF){alert("Le module PDF n'est pas chargé.");return}
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const c=calc(), plan=window.currentPlan||[], duration=window.currentDuration||0, carbsH=window.currentCarbsH||0;
+  let y=30;
+
+  drawPdfHeader(doc,'GPX Nutrition Planner V5');
+  doc.setFontSize(10);
+  doc.text(`Distance ${(c.dist/1000).toFixed(1)} km · D+ ${Math.round(c.dplus)} m · Alt. max ${Math.round(c.max)} m`,12,y); y+=6;
+  doc.text(`Temps cible ${formatTime(duration)} · Objectif ${carbsH} g glucides/h · Départ ${document.getElementById('startTime').value}`,12,y); y+=10;
+
+  doc.setFontSize(13);doc.text('Ravitaillements',12,y);y+=7;doc.setFontSize(9);
+  ravitos.forEach(r=>{
+    doc.text(`${r.name} — ${(r.dist/1000).toFixed(1)} km — ${Math.round(r.ele)} m`,14,y);y+=5;
+    if(y>275){doc.addPage();drawPdfHeader(doc,'GPX Nutrition Planner V5');y=30;}
+  });
+  y+=4;doc.setFontSize(13);doc.text('Pacing & nutrition',12,y);y+=7;doc.setFontSize(8);
+  const headers=['Temps','Heure','Km','Alt.','Événement','Obj.','Produits','Cumul'];
+  const xs=[10,28,43,57,73,112,128,183];
+  headers.forEach((h,i)=>doc.text(h,xs[i],y));y+=5;
+  doc.setFontSize(7.5);
+  plan.forEach(x=>{
+    const vals=[x.split,x.clock,x.km.toFixed(1),Math.round(x.p.ele)+' m',(x.event||'—').slice(0,20),x.targetCarbs+' g',(()=>{const c={};(x.productIds||[]).forEach(id=>{const p=productById(id);if(p)c[p.name]=(c[p.name]||0)+1;});return Object.entries(c).map(([n,q])=>`${q}x${n}`).join('+').slice(0,32)||'—';})(),x.subtotal.carbs+' g'];
+    vals.forEach((v,i)=>doc.text(String(v),xs[i],y));
+    y+=4.5;
+    if(y>280){doc.addPage();drawPdfHeader(doc,'GPX Nutrition Planner V5');y=30;doc.setFontSize(8);headers.forEach((h,i)=>doc.text(h,xs[i],y));y+=5;doc.setFontSize(7.5);}
+  });
+
+  y+=5;
+  if(y>270){doc.addPage();drawPdfHeader(doc,'GPX Nutrition Planner V5');y=30;}
+  doc.setFontSize(10);doc.text('Produits utilisés',12,y);y+=6;doc.setFontSize(8.5);
+  selectedProducts().forEach(p=>{
+    doc.text(`${p.name} — ${p.carbs} g glucides — ${p.calories} kcal`,14,y);y+=5;
+  });
+  y+=5;doc.setFontSize(10);doc.text('Résumé des achats',12,y);y+=6;doc.setFontSize(8.5);
+  const counts={};
+  (window.currentPlan||[]).forEach(x=>(x.productIds||[]).forEach(id=>{counts[id]=(counts[id]||0)+1;}));
+  Object.entries(counts).forEach(([id,q])=>{
+    const p=productById(id); if(p){doc.text(`${p.name} — ${q} unité(s) à acheter`,14,y);y+=5;}
+  });
+  doc.save('strategie-GPX-V5.pdf');
+}
+
+document.getElementById('download').onclick=exportPDF;
+
+</script>
+</body>
+</html>
