@@ -1,0 +1,3596 @@
+<!DOCTYPE html>
+<html lang="fr">
+ <head>
+  <!-- ================================================================
+   GPX Nutrition Planner — version nettoyée
+   Structure : dépendances → styles → interface → logique JS
+   Le comportement fonctionnel est conservé autant que possible.
+ ================================================================ -->
+  <meta charset="utf-8"/>
+  <meta content="width=device-width,initial-scale=1" name="viewport"/>
+  <title>
+   GPX Nutrition Planner V10
+  </title>
+  <link href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" rel="stylesheet"/>
+  <style>
+   * {
+  box-sizing:border-box
+}
+body {
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f4f4f1;
+  color:#161616
+}
+header {
+  background:#111;
+  color:#fff;
+  padding:18px 22px
+}
+header h1 {
+  margin:0;
+  font-size:23px
+}
+header p {
+  margin:5px 0 0;
+  color:#bbb
+}
+main {
+  display:grid;
+  grid-template-columns:390px 1fr;
+  min-height:calc(100vh - 78px)
+}
+aside {
+  background:#fff;
+  border-right:1px solid #ddd;
+  padding:16px;
+  overflow:auto
+}
+section {
+  min-width:0
+}
+.card {
+  background:#fafafa;
+  border:1px solid #ddd;
+  border-radius:12px;
+  padding:14px;
+  margin-bottom:14px
+}
+h2 {
+  font-size:16px;
+  margin:0 0 10px
+}
+label {
+  display:block;
+  font-size:12px;
+  font-weight:700;
+  margin:10px 0 5px
+}
+input,select,button {
+  width:100%;
+  padding:9px;
+  border:1px solid #ccc;
+  border-radius:8px;
+  font-size:13px
+}
+button {
+  background:#111;
+  color:#fff;
+  font-weight:700;
+  cursor:pointer;
+  margin-top:8px
+}
+button.secondary {
+  background:#fff;
+  color:#111
+}
+button.danger {
+  background:#8b1e1e
+}
+.small {
+  font-size:11px;
+  color:#666
+}
+.grid2 {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px
+}
+#map {
+  height:52vh;
+  min-height:420px
+}
+.profile {
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:12px;
+  margin:14px;
+  padding:14px
+}
+.chart {
+  height:230px
+}
+.stats {
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:8px
+}
+.stat {
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:9px;
+  font-size:11px
+}
+.stat b {
+  display:block;
+  font-size:16px;
+  margin-top:3px
+}
+.product {
+  background:#fff;
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:8px;
+  margin:6px 0
+}
+.product-row {
+  display:grid;
+  grid-template-columns:1fr 55px 55px 70px;
+  gap:5px;
+  align-items:center;
+  font-size:11px
+}
+.ravito {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:7px 0;
+  border-bottom:1px solid #ddd;
+  font-size:12px
+}
+.plan-product {
+  min-width:145px;
+  padding:6px;
+  border:1px solid #ccc;
+  border-radius:7px;
+  font-size:11px
+}
+.strategy-head {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-bottom:10px
+}
+.subtotal-row {
+  background:#f0f0ed;
+  color:#333;
+  font-size:10px
+}
+.strategy-head .pill {
+  background:#e9e9e6
+}
+@media print {
+  aside {
+    display:none!important
+  }
+  section {
+    width:100%
+  }
+  #map {
+    display:none
+  }
+  .profile {
+    margin:0 0 14px
+  }
+  .card {
+    break-inside:avoid
+  }
+
+}
+table {
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px
+}
+th,td {
+  padding:7px;
+  border-bottom:1px solid #ddd;
+  text-align:left
+}
+.notice {
+  font-size:11px;
+  color:#666
+}
+.hidden {
+  display:none
+}
+.pill {
+  display:inline-block;
+  background:#e9e9e6;
+  padding:3px 6px;
+  border-radius:20px;
+  font-size:10px
+}
+@media(max-width:850px) {
+  main {
+    grid-template-columns:1fr
+  }
+  aside {
+    border-right:0
+  }
+  .stats {
+    grid-template-columns:1fr 1fr
+  }
+  #map {
+    height:48vh
+  }
+
+}
+.strategy-products {
+  min-width:220px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:4px
+}
+.strategy-products label {
+  cursor:pointer;
+  background:#f7f7f4;
+  border:1px solid #ddd;
+  border-radius:8px;
+  padding:3px 5px
+}
+.strategy-products label {
+  cursor:pointer
+}
+.strategy-products input[type=number] {
+  width:52px;
+  padding:4px;
+  border:1px solid #ccc;
+  border-radius:6px
+}
+.start-row {
+  background:#edf8ed!important;
+  color:#237a2d
+}
+.start-row td {
+  border-bottom:1px solid #b9ddb9
+}
+.ravito-row {
+  background:#fff0f0!important;
+  color:#a40000
+}
+.ravito-row td {
+  border-bottom:1px solid #e6b0b0
+}
+.split-row {
+  background:#f7f7f3
+}
+.mini-profile-wrap {
+  margin:12px 0;
+  padding:10px;
+  border:1px solid #ddd;
+  border-radius:9px;
+  background:#fafafa
+}
+.mini-profile-wrap canvas {
+  width:100%;
+  height:120px
+}
+.mode-help {
+  margin-top:8px
+}
+.manual-point {
+  background:#fff;
+  color:#111;
+  border:1px solid #bbb
+}
+.portion-title {
+  font-weight:700;
+  font-size:12px;
+  margin-bottom:6px
+}
+.readonly-time {
+  padding:9px 10px;
+  border:1px solid #ccc;
+  border-radius:7px;
+  background:#f3f3f1;
+  font-weight:700;
+  min-height:18px
+}
+.strategy-score {
+  font-weight:700
+}
+.metric-main {
+  font-weight:700;
+  font-size:13px;
+  line-height:1.15
+}
+.metric-sub {
+  font-size:10px;
+  color:#666;
+  line-height:1.15;
+  margin-top:2px
+}
+.profile-btn {
+  color:#111!important;
+  background:#fff;
+  border:0;
+  padding:0;
+  font-weight:700;
+  cursor:pointer
+}
+.zoom-help {
+  font-size:10px;
+  color:#666;
+  margin-top:4px
+}
+/* V22: profile layout + popup legends */
+.placement-help-v22 {
+  margin:8px 0;
+  padding:9px 11px;
+  border:1px solid #d9dde5;
+  border-radius:8px;
+  background:#f7f8fa;
+  font-size:12px;
+  line-height:1.45
+}
+.v22-profile-shell {
+  overflow:visible;
+  min-height:455px;
+  position:relative
+}
+.v22-profile-shell canvas {
+  display:block;
+  width:100%;
+  height:360px!important
+}
+.v22-profile-legend {
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px 14px;
+  margin:9px 0 2px;
+  font-size:11px;
+  line-height:1.3
+}
+.v22-profile-legend span {
+  display:inline-flex;
+  align-items:center;
+  gap:4px
+}
+.v22-profile-legend i {
+  width:11px;
+  height:11px;
+  display:inline-block;
+  border-radius:2px;
+  border:1px solid rgba(0,0,0,.15)
+}
+.v22-popup-legend {
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px 10px;
+  margin:8px 0 2px;
+  font-size:10px;
+  line-height:1.25
+}
+.v22-popup-legend span {
+  display:inline-flex;
+  align-items:center;
+  gap:4px
+}
+.v22-popup-legend i {
+  width:10px;
+  height:10px;
+  display:inline-block;
+  border-radius:2px;
+  border:1px solid rgba(0,0,0,.15)
+}
+.v22-th-note {
+  display:block;
+  font-size:9px;
+  color:#667085;
+  font-weight:400;
+  line-height:1.2;
+  margin-top:2px
+}
+/* V24 layout fixes */
+.v24-profile-wrap {
+  min-height:560px!important;
+  height:auto!important;
+  overflow:visible!important;
+  position:relative;
+  margin-bottom:18px!important;
+}
+.v24-profile-wrap canvas {
+  height:430px!important;
+  min-height:430px!important;
+  width:100%!important;
+  display:block!important;
+}
+.v24-profile-wrap .v22-profile-legend,
+.v24-profile-wrap .profile-legend {
+  margin-top:12px!important;
+  margin-bottom:8px!important;
+  position:relative!important;
+  clear:both!important;
+}
+.v24-placement-note {
+  margin:8px 0;
+  padding:9px 11px;
+  border:1px solid #d9dde5;
+  border-radius:8px;
+  background:#f7f8fa;
+  font-size:12px;
+  line-height:1.45
+}
+.v24-confirm {
+  position:fixed;
+  z-index:2147483647;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:min(390px,calc(100vw - 32px));
+  background:#fff;
+  border:1px solid #d0d5dd;
+  border-radius:12px;
+  box-shadow:0 16px 50px rgba(0,0,0,.22);
+  padding:18px
+}
+.v24-confirm h3 {
+  margin:0 0 8px;
+  font-size:16px
+}
+.v24-confirm p {
+  margin:0 0 14px;
+  font-size:13px;
+  line-height:1.45;
+  color:#475467
+}
+.v24-confirm .actions {
+  display:flex;
+  gap:8px;
+  justify-content:flex-end
+}
+.v24-confirm button {
+  padding:8px 13px;
+  border-radius:7px;
+  border:1px solid #d0d5dd;
+  background:#fff;
+  cursor:pointer
+}
+.v24-confirm button.primary {
+  background:#111827;
+  color:#fff;
+  border-color:#111827
+}
+/* V25: keep cards in normal document flow and put instructions in cards 1/2 */
+.v25-profile-card {
+  position:relative!important;
+  height:auto!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  margin-bottom:20px!important;
+  box-sizing:border-box!important;
+}
+.v25-profile-card canvas {
+  position:relative!important;
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:380px!important;
+  min-height:380px!important;
+}
+.v25-profile-card .v22-profile-legend,
+.v25-profile-card .profile-legend {
+  position:relative!important;
+  clear:both!important;
+  margin:10px 0 4px!important;
+}
+.v25-placement-note {
+  margin:8px 0 10px;
+  padding:9px 11px;
+  border:1px solid #d9dde5;
+  border-radius:8px;
+  background:#f7f8fa;
+  font-size:12px;
+  line-height:1.45;
+  box-sizing:border-box;
+}
+/* V26: profile stays entirely inside its card */
+.v25-profile-card {
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  max-height:none!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  position:relative!important;
+  margin-bottom:20px!important;
+}
+.v25-profile-card canvas {
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:40vh!important;
+  min-height:300px!important;
+  max-height:600px!important;
+  box-sizing:border-box!important;
+}
+.v25-profile-card .v22-profile-legend,
+.v25-profile-card .profile-legend {
+  position:relative!important;
+  display:flex!important;
+  flex-wrap:wrap!important;
+  width:100%!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+  clear:both!important;
+  margin:10px 0 6px!important;
+  overflow:hidden!important;
+}
+/* V27: responsive profile sizing */
+.v25-profile-card {
+  width:100%!important;
+  height:auto!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+}
+.v25-profile-card canvas {
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:60%!important;
+  min-height:300px!important;
+  max-height:600px!important;
+  box-sizing:border-box!important;
+}
+/* V28: contain the complete elevation profile inside its own card */
+.v28-profile-container {
+  width:100%!important;
+  height:clamp(360px,45vh,520px)!important;
+  min-height:360px!important;
+  max-height:520px!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  position:relative!important;
+  margin-bottom:20px!important;
+}
+.v28-profile-container .chart {
+  width:100%!important;
+  height:calc(100% - 52px)!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+}
+.v28-profile-container #elevChart {
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:60%!important;
+  min-height:210px!important;
+  max-height:320px!important;
+  box-sizing:border-box!important;
+}
+.v28-profile-container .zoom-help {
+  max-width:100%!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  margin-top:6px!important;
+}
+.v28-profile-container #elevationLegend {
+  width:100%!important;
+  max-width:100%!important;
+  box-sizing:border-box!important;
+  overflow:hidden!important;
+  display:flex!important;
+  flex-wrap:wrap!important;
+}
+/* V30: slightly more compact elevation-profile card */
+.v28-profile-container {
+  height:clamp(360px,45vh,520px)!important;
+  min-height:360px!important;
+  max-height:520px!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+}
+.v28-profile-container .chart {
+  height:calc(100% - 52px)!important;
+  overflow:hidden!important;
+}
+.v28-profile-container #elevChart {
+  width:100%!important;
+  height:60%!important;
+  min-height:210px!important;
+  max-height:320px!important;
+}
+/* V31: compact elevation-profile card, no large empty area below the graph */
+.v28-profile-container {
+  width:100%!important;
+  height:clamp(320px,36vh,420px)!important;
+  min-height:320px!important;
+  max-height:420px!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+  margin-bottom:18px!important;
+}
+.v28-profile-container .chart {
+  width:100%!important;
+  height:calc(100% - 46px)!important;
+  min-height:0!important;
+  overflow:hidden!important;
+  box-sizing:border-box!important;
+}
+.v28-profile-container #elevChart {
+  display:block!important;
+  width:100%!important;
+  max-width:100%!important;
+  height:calc(100% - 8px)!important;
+  min-height:0!important;
+  max-height:none!important;
+  box-sizing:border-box!important;
+}
+.v28-profile-container #elevationLegend {
+  max-height:28px!important;
+  overflow:hidden!important;
+}
+/* V32: keep section labels inside the elevation chart */
+.v28-profile-container #elevChart {
+  padding-top:18px!important;
+  box-sizing:border-box!important;
+}
+.v28-profile-container {
+  overflow:visible!important;
+}
+.v28-profile-container .chart {
+  overflow:visible!important;
+}
+/* V33 */
+#v24Confirm .actions {
+  display:flex!important;
+  gap:10px!important;
+  justify-content:flex-end!important
+}
+#v24Confirm #v24No {
+  background:#111!important;
+  color:#fff!important;
+  border:1px solid #111!important;
+}
+#v24Confirm #v24Yes {
+  background:#fff!important;
+  color:#111!important;
+  border:1px solid #111!important;
+}
+.v28-profile-container {
+  overflow:visible!important;
+}
+.v28-profile-container .chart {
+  overflow:visible!important;
+}
+.v28-profile-container #elevationLegend {
+  display:flex!important;
+  position:relative!important;
+  order:0!important;
+  min-height:30px!important;
+  max-height:none!important;
+  margin:0 0 6px!important;
+  padding:0!important;
+  overflow:visible!important;
+}
+.v28-profile-container #elevChart {
+  padding-top:0!important;
+  overflow:visible!important;
+}
+  </style>
+  <style>
+   .sp-list {
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-width:210px
+}
+.sp-item {
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:3px 5px;
+  border:1px solid #e6e6e6;
+  border-radius:7px;
+  background:#fafafa
+}
+.sp-name {
+  flex:1;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis
+}
+.sp-qty {
+  width:48px!important;
+  padding:4px!important
+}
+.product-total {
+  margin-top:3px
+}
+.profile-btn {
+  border:0;
+  background:none;
+  padding:0;
+  font:inherit;
+  cursor:pointer;
+  text-decoration:underline dotted;
+  color:#111!important
+}
+.profile-btn span {
+  font-size:10px;
+  color:#666
+}
+.ravito-row {
+  background:#fff1f1!important
+}
+.ravito-row td {
+  color:#9b1c1c
+}
+.carry-box {
+  display:block;
+  padding:4px 7px;
+  border-left:4px solid #c0392b;
+  background:#fff5f5;
+  border-radius:5px
+}
+.carry-box small {
+  display:block;
+  color:#777;
+  margin-top:2px
+}
+#elevationLegend {
+  display:flex;
+  gap:12px;
+  align-items:center;
+  flex-wrap:wrap;
+  margin:7px 0 10px;
+  font-size:12px
+}
+#elevationLegend .legend-title {
+  font-weight:700;
+  width:100%
+}
+#elevationLegend span {
+  display:inline-flex;
+  align-items:center;
+  gap:4px
+}
+#elevationLegend i {
+  display:inline-block;
+  width:14px;
+  height:10px;
+  border-radius:2px
+}
+.portion-modal {
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  z-index:9999;
+  align-items:center;
+  justify-content:center
+}
+.portion-modal.open {
+  display:flex
+}
+.portion-modal-card {
+  position:relative;
+  background:white;
+  border-radius:12px;
+  padding:20px;
+  max-width:94vw;
+  box-shadow:0 12px 40px rgba(0,0,0,.25)
+}
+.portion-modal-card button {
+  position:absolute;
+  right:10px;
+  top:8px;
+  border:0;
+  background:none;
+  font-size:25px;
+  cursor:pointer
+}
+.portion-modal-card canvas {
+  max-width:100%;
+  display:block
+}
+.strategy-products {
+  min-width:250px;
+  max-width:320px
+}
+.strategy-products .sp-item {
+  padding:4px 6px
+}
+.strategy-products .sp-qty {
+  width:50px!important
+}
+.plan-event {
+  width:100%;
+  min-width:100px;
+  box-sizing:border-box
+}
+.split-marker-label {
+  font-weight:700
+}
+.profile-cursor {
+  pointer-events:none
+}
+@media(max-width:1100px) {
+  .strategy-products {
+    min-width:210px;
+    max-width:260px
+  }
+
+}
+  </style>
+ 
+<style id="aside-right-fix">
+  main {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+  }
+
+  main > section {
+    order: 1 !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+  }
+
+  main > aside {
+    order: 2 !important;
+    flex: 0 0 390px !important;
+    width: 390px !important;
+    box-sizing: border-box !important;
+    border-left: 1px solid #ddd !important;
+    border-right: 0 !important;
+  }
+
+  @media (max-width: 850px) {
+    main {
+      display: flex !important;
+      flex-direction: column !important;
+    }
+
+    main > section {
+      order: 1 !important;
+    }
+
+    main > aside {
+      order: 2 !important;
+      width: 100% !important;
+      flex-basis: auto !important;
+      border-left: 0 !important;
+    }
+  }
+</style>
+
+<style id="import-course-top-fix">
+.import-course-top {
+  width: 100%;
+  margin: 0;
+}
+.import-course-top .card {
+  margin: 14px;
+}
+</style>
+
+<style id="import-course-compact-layout">
+  .import-course-top > .card {
+    padding: 12px 14px !important;
+  }
+
+  .import-course-top > .card h2 {
+    margin: 0 0 10px !important;
+  }
+
+  .import-course-top > .card > input#gpx {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 9px;
+  }
+
+  .import-course-top > .card > .grid2 {
+    display: grid !important;
+    grid-template-columns: 1.4fr 1fr !important;
+    gap: 10px !important;
+    margin-bottom: 9px;
+  }
+
+  .import-course-top > .card > label,
+  .import-course-top > .card > select {
+    display: inline-block;
+    vertical-align: middle;
+  }
+
+  .import-course-top > .card > label {
+    width: auto;
+    margin-right: 8px;
+  }
+
+  .import-course-top > .card > select#strategyMode {
+    width: auto;
+    min-width: 250px;
+  }
+
+  .import-course-top #guidedControls {
+    display: grid !important;
+    grid-template-columns: auto 1fr auto 130px !important;
+    gap: 8px 10px !important;
+    align-items: center !important;
+    margin-top: 9px;
+  }
+
+  .import-course-top #guidedControls label {
+    margin: 0 !important;
+  }
+
+  .import-course-top #guidedControls select,
+  .import-course-top #guidedControls input {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .import-course-top #manualControls {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    gap: 8px;
+    align-items: center;
+    margin-top: 9px;
+  }
+
+  .import-course-top #manualControls.hidden {
+    display: none !important;
+  }
+
+  .import-course-top .v25-placement-note {
+    margin-top: 8px !important;
+    padding: 7px 9px !important;
+    font-size: 12px !important;
+  }
+
+  @media (max-width: 900px) {
+    .import-course-top #guidedControls {
+      grid-template-columns: 1fr 1fr !important;
+    }
+
+    .import-course-top > .card > select#strategyMode {
+      width: 100%;
+      margin-top: 4px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .import-course-top > .card > .grid2 {
+      grid-template-columns: 1fr !important;
+    }
+
+    .import-course-top #guidedControls {
+      grid-template-columns: 1fr !important;
+    }
+
+    .import-course-top #manualControls {
+      grid-template-columns: 1fr !important;
+    }
+  }
+</style>
+
+
+<style id="import-course-clean-layout">
+  .import-course-top {
+    width: 100%;
+    margin: 0 0 12px;
+  }
+
+  .import-card-clean {
+    padding: 12px 14px !important;
+  }
+
+  .import-card-clean > h2 {
+    margin: 0 0 10px !important;
+    font-size: 16px !important;
+    line-height: 1.2 !important;
+  }
+
+  .import-main-fields {
+    display: grid;
+    grid-template-columns: minmax(260px, 2.2fr) 130px 120px minmax(220px, 1.6fr);
+    gap: 10px;
+    align-items: end;
+  }
+
+  .import-field {
+    min-width: 0;
+  }
+
+  .import-field > label {
+    display: block;
+    margin: 0 0 4px !important;
+    font-size: 11px !important;
+    font-weight: 600;
+    line-height: 1.15 !important;
+    color: #4b5563;
+  }
+
+  .import-field > input,
+  .import-field > select {
+    width: 100% !important;
+    height: 34px !important;
+    min-height: 34px !important;
+    box-sizing: border-box;
+    margin: 0 !important;
+  }
+
+  .import-file-field input[type="file"] {
+    padding: 4px 6px !important;
+  }
+
+  .import-guided-fields {
+    display: grid !important;
+    grid-template-columns: minmax(260px, 1fr) 180px;
+    gap: 10px;
+    margin-top: 9px;
+    padding-top: 9px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  #manualControls {
+    display: grid;
+    grid-template-columns: max-content max-content 1fr;
+    gap: 8px;
+    align-items: center;
+    margin-top: 9px;
+    padding-top: 9px;
+    border-top: 1px solid #e5e7eb;
+  }
+
+  #manualControls.hidden {
+    display: none !important;
+  }
+
+  #manualControls button {
+    margin: 0 !important;
+    white-space: nowrap;
+  }
+
+  .import-card-clean .v25-placement-note {
+    margin: 9px 0 0 !important;
+    padding: 6px 9px !important;
+    font-size: 11px !important;
+    line-height: 1.3 !important;
+  }
+
+  @media (max-width: 1050px) {
+    .import-main-fields {
+      grid-template-columns: minmax(220px, 1.7fr) 120px 110px minmax(190px, 1.4fr);
+      gap: 8px;
+    }
+  }
+
+  @media (max-width: 850px) {
+    .import-main-fields {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .import-file-field {
+      grid-column: 1 / -1;
+    }
+
+    .import-guided-fields {
+      grid-template-columns: 1fr 160px;
+    }
+  }
+
+  @media (max-width: 600px) {
+    .import-main-fields,
+    .import-guided-fields,
+    #manualControls {
+      grid-template-columns: 1fr;
+    }
+
+    .import-file-field {
+      grid-column: auto;
+    }
+  }
+</style>
+
+
+<style id="nutrition-dropdown-layout">
+  .nutrition-card {
+    padding: 13px !important;
+  }
+
+  .nutrition-card h2 {
+    margin: 0 0 10px !important;
+    font-size: 16px !important;
+  }
+
+  .nutrition-picker label,
+  .selected-products-title {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #4b5563;
+    margin-bottom: 4px;
+  }
+
+  .nutrition-picker-row {
+    display: block;
+  }
+
+  .nutrition-picker-row select {
+    width: 100%;
+    height: 34px;
+    box-sizing: border-box;
+    margin: 0;
+  }
+
+  .selected-products-title {
+    margin-top: 11px;
+    margin-bottom: 5px;
+  }
+
+  #products {
+    display: grid;
+    gap: 4px;
+  }
+
+  .selected-product {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 55px 65px 34px;
+    align-items: center;
+    gap: 6px;
+    min-height: 31px;
+    padding: 3px 5px;
+    border: 1px solid #ddd;
+    border-radius: 7px;
+    background: #fff;
+    font-size: 11px;
+  }
+
+  .selected-product-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .selected-product .pdel {
+    width: 34px !important;
+    height: 27px;
+    margin: 0 !important;
+    padding: 2px 6px !important;
+  }
+
+  .no-products {
+    padding: 7px;
+    border: 1px dashed #ccc;
+    border-radius: 6px;
+    text-align: center;
+  }
+
+  .nutrition-add-product {
+    margin-top: 7px !important;
+    padding: 6px 9px !important;
+    font-size: 11px;
+  }
+
+  .nutrition-card .notice {
+    margin: 7px 0 0 !important;
+    padding: 6px 8px !important;
+    font-size: 11px !important;
+    line-height: 1.25 !important;
+  }
+
+  @media (max-width: 500px) {
+    .selected-product {
+      grid-template-columns: minmax(0, 1fr) 45px 55px 32px;
+    }
+  }
+</style>
+
+
+<style id="ravito-same-frame">
+  .import-card-clean .ravito-in-import {
+    margin-top: 12px;
+    padding-top: 11px;
+    border-top: 1px solid #e1e5e9;
+  }
+
+  .import-card-clean .ravito-section-title {
+    margin: 0 0 8px;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.2;
+  }
+
+  .import-card-clean .ravito-section-content > .card {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  .import-card-clean .ravito-section-content > .card h2 {
+    display: none;
+  }
+
+  .import-card-clean .ravito-section-content .v25-placement-note {
+    margin-top: 0 !important;
+  }
+
+  .import-card-clean .ravito-section-content .notice {
+    margin-top: 7px;
+  }
+
+  .import-card-clean .ravito-section-content #ravitos {
+    margin-top: 8px;
+  }
+</style>
+
+<style id="manual-profile-popup-css">
+  #manualProfilePlaceholder{display:block;width:100%;height:1px;}
+  .manual-profile-modal{
+    display:none;position:fixed;inset:0;z-index:99999;
+    background:rgba(15,23,42,.62);padding:18px;
+    align-items:center;justify-content:center;
+  }
+  .manual-profile-modal.open{display:flex;}
+  .manual-profile-dialog{
+    width:min(1150px,96vw);max-height:92vh;overflow:auto;
+    background:#fff;border-radius:14px;padding:16px;
+    box-shadow:0 24px 70px rgba(0,0,0,.28);
+  }
+  .manual-profile-header{
+    display:flex;justify-content:space-between;gap:16px;align-items:flex-start;
+    margin-bottom:10px;
+  }
+  #manualProfileTitle{margin:0;font-size:19px;}
+  .manual-profile-header p{margin:4px 0 0;color:#667085;font-size:12px;}
+  .manual-profile-close{
+    width:34px!important;height:34px!important;padding:0!important;margin:0!important;
+    font-size:22px;line-height:1;
+  }
+  .manual-profile-tip{
+    padding:9px 11px;margin-bottom:11px;border-radius:8px;
+    background:#f5f8f6;border:1px solid #d8e5dc;
+    font-size:12px;line-height:1.45;
+  }
+  #manualProfileCanvasHost{
+    width:100%;height:min(54vh,480px);min-height:300px;
+    border:1px solid #d9dee5;border-radius:9px;overflow:hidden;background:#fff;
+  }
+  #manualProfileCanvasHost #elevChart{
+    display:block!important;width:100%!important;height:100%!important;
+    max-width:none!important;max-height:none!important;min-height:0!important;
+    box-sizing:border-box;
+    cursor:crosshair;
+  }
+  .manual-profile-actions{
+    display:flex;justify-content:space-between;align-items:center;
+    gap:12px;margin-top:10px;font-size:12px;color:#667085;
+  }
+  .manual-profile-actions button{margin:0!important;}
+  body.manual-modal-open{overflow:hidden;}
+  @media(max-width:650px){
+    .manual-profile-modal{padding:8px;}
+    .manual-profile-dialog{width:100%;padding:11px;}
+    #manualProfileCanvasHost{height:58vh;min-height:250px;}
+    .manual-profile-actions{align-items:flex-start;}
+  }
+</style>
+
+<style id="ravito-popup-layout">
+  .ravito-map-dialog { width:min(1200px,96vw); }
+  .ravito-map-host {
+    width:100%;
+    height:min(65vh,620px);
+    min-height:360px;
+    border:1px solid #d8dde3;
+    border-radius:8px;
+    overflow:hidden;
+  }
+  .ravito-map-host .leaflet-container {
+    width:100%;
+    height:100%;
+  }
+</style>
+
+
+<style id="ravito-popup-final-fix">
+  .popup-placeholder{display:none!important;}
+  .manual-profile-modal,
+  .ravito-map-modal{
+    display:none;
+    position:fixed;
+    inset:0;
+    z-index:99999;
+    background:rgba(15,23,42,.58);
+    align-items:center;
+    justify-content:center;
+    padding:18px;
+  }
+  .manual-profile-modal.open,
+  .ravito-map-modal.open{display:flex!important;}
+  .manual-profile-dialog,
+  .ravito-map-dialog{
+    width:min(1100px,96vw);
+    max-height:92vh;
+    overflow:auto;
+    background:#fff;
+    border-radius:12px;
+    box-shadow:0 20px 60px rgba(0,0,0,.25);
+    padding:16px;
+  }
+  .manual-profile-dialog #manualProfileCanvasHost{
+    width:100%;
+    height:min(48vh,430px);
+    min-height:260px;
+  }
+  .manual-profile-dialog #manualProfileCanvasHost #elevChart{
+    width:100%!important;
+    height:100%!important;
+    max-width:none!important;
+    min-height:0!important;
+    box-sizing:border-box!important;
+  }
+  .ravito-map-dialog #ravitoMapHost{
+    width:100%;
+    height:min(62vh,560px);
+    min-height:360px;
+    overflow:hidden;
+    border:1px solid #d8dde3;
+    border-radius:8px;
+  }
+  .ravito-map-dialog #ravitoMapHost .leaflet-container{
+    width:100%!important;
+    height:100%!important;
+  }
+  .ravito-map-header{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:flex-start;
+    margin-bottom:10px;
+  }
+  .ravito-map-header h2{margin:0 0 3px!important;font-size:18px!important;}
+  .ravito-map-header p{margin:0;color:#667085;font-size:12px;}
+  .manual-profile-tip{
+    padding:9px 11px;
+    margin-bottom:10px;
+    border:1px solid #dfe5eb;
+    border-radius:7px;
+    background:#f7f9fb;
+    font-size:12px;
+    line-height:1.4;
+  }
+  .manual-profile-actions{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    margin-top:10px;
+    font-size:12px;
+    color:#667085;
+  }
+  .manual-profile-actions button{margin:0!important;}
+</style>
+
+
+<style id="ravito-popup-fix">
+#ravitoMapHost{width:100%;height:min(60vh,560px);min-height:300px;border-radius:8px;overflow:hidden}
+#ravitoMapHost #map{width:100%!important;height:100%!important;margin:0!important}
+.ravito-map-modal{display:none;position:fixed;inset:0;z-index:100000;background:rgba(15,23,42,.6);align-items:center;justify-content:center;padding:16px}
+.ravito-map-modal.open{display:flex}
+.ravito-map-dialog{width:min(1100px,96vw);max-height:94vh;overflow:auto;background:#fff;border-radius:12px;padding:16px;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+</style>
+<style id="pacing-explanation-style">
+.pacing-explanation{
+  margin:10px 0 8px;
+  border:1px solid #dfe5eb;
+  border-radius:8px;
+  background:#f8fafb;
+  font-size:12px;
+}
+.pacing-explanation summary{
+  cursor:pointer;
+  padding:9px 10px;
+  font-weight:700;
+  color:#344054;
+}
+.pacing-explanation-body{
+  padding:0 10px 10px;
+  color:#475467;
+  line-height:1.45;
+}
+.pacing-explanation-body p{margin:7px 0;}
+.pacing-formula{
+  padding:8px 9px;
+  border-radius:6px;
+  background:#fff;
+  border:1px solid #e2e8f0;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:11px;
+  overflow-x:auto;
+}
+</style>
+</head>
+ <body>
+  <header>
+   <h1>
+    Strat&eacute;gie Nutrition V52 (methode Minetti)
+   </h1>
+   <p>
+    Trace GPX &middot; Ravitaillements &middot; Nutrition &middot; Pacing strat&eacute;gie
+   </p>
+  </header>
+  <main>
+   <!-- ====================== PANNEAU DE CONFIGURATION ====================== -->
+   <aside>
+    
+    <div class="card nutrition-card">
+  <h2>3. Ma nutrition, les produits que j'ai</h2>
+
+  <div class="nutrition-picker">
+    <label for="productSelector">Choisir les produits disponibles</label>
+    <div class="nutrition-picker-row">
+      <select id="productSelector">
+        <option value="">Sélectionner un produit…</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="selected-products-title">Produits sélectionnés</div>
+  <div id="products"></div>
+
+  <button class="secondary nutrition-add-product" id="addProduct">
+    + Créer un nouveau produit
+  </button>
+
+  <p class="notice">
+    Sélectionne plusieurs produits dans la liste. Ils seront disponibles pour composer chaque prise de nutrition.
+  </p>
+</div><div class="card">
+     <h2>
+      4. Strat&eacute;gie de pacing
+     </h2>
+     <div>
+      <label>
+       Temps cible
+      </label>
+      <div class="readonly-time" id="targetTimeDisplay">
+       04:00
+      </div>
+     </div>
+     <label>
+      Heure de d&eacute;part
+     </label>
+     <input id="startTime" type="time" value="08:00"/>
+     <details class="pacing-explanation">
+      <summary>ℹ️ Comment est calculée la vitesse selon la pente ?</summary>
+      <div class="pacing-explanation-body">
+        <p><b>Le calcul utilise le modèle de Minetti et al. (2002).</b> Il estime simplement que certaines pentes demandent plus d’effort que d’autres.</p>
+        <div class="pacing-formula">C(i) = 155,4·i⁵ − 30,4·i⁴ − 43,3·i³ + 46,3·i² + 19,5·i + 3,6</div>
+        <p><code>i</code> est la pente : par exemple, <b>+10&nbsp;% = 0,10</b>. Le calcul compare ensuite chaque pente au plat : plus le coût est élevé, plus l’allure prévue est lente. Une descente modérée permet au contraire d’aller plus vite.</p>
+        <p>Le temps est ensuite réparti sur toute la course pour que le résultat corresponde toujours exactement au <b>temps cible</b>.</p>
+        <p><b>Et pour les descentes très raides ?</b> À partir de <b>−20&nbsp;%</b>, une petite pénalité technique est ajoutée progressivement : plus la descente est raide, plus la vitesse est réduite. Cela évite de considérer une pente à −30&nbsp;% comme simplement « plus rapide » qu’une pente à −10&nbsp;%.</p>
+        <p>Le modèle de Minetti est utilisé jusqu’à <b>±45&nbsp;%</b>. Au-delà, on conserve la valeur de ±45&nbsp;% plutôt que d’extrapoler la formule.</p>
+      </div>
+     </details>
+    </div>
+    <div class="card">
+     <h2>
+      5. G&eacute;n&eacute;rer &amp; exporter
+     </h2>
+     <button id="generate">
+      G&eacute;n&eacute;rer la strat&eacute;gie
+     </button>
+     <label>
+      Nom du PDF
+     </label>
+     <input id="pdfName" placeholder="Nom du fichier PDF" type="text" value="strategie-course"/>
+     <button class="secondary" id="download">
+      ⬇ Exporter le PDF
+     </button>
+    </div>
+    <div class="card hidden" id="statsCard">
+     <div class="stats">
+      <div class="stat">
+       Distance
+       <b id="dist">
+        &mdash;
+       </b>
+      </div>
+      <div class="stat">
+       D+
+       <b id="dplus">
+        &mdash;
+       </b>
+      </div>
+      <div class="stat">
+       Alt. max
+       <b id="maxalt">
+        &mdash;
+       </b>
+      </div>
+      <div class="stat">
+       Glucides
+       <b id="totalcarbs">
+        &mdash;
+       </b>
+      </div>
+     </div>
+    </div>
+    <div class="notice" id="msg">
+     Importe un GPX pour commencer.
+    </div>
+   </aside>
+   <!-- ====================== ZONE PRINCIPALE ====================== -->
+   <section>
+    <div class="import-course-top">
+<div class="card import-card-clean">
+  <h2>1. Importer la course</h2>
+
+  <div class="import-main-fields">
+    <div class="import-field import-file-field">
+      <label for="gpx">Fichier GPX</label>
+      <input id="gpx" type="file" accept=".gpx,application/gpx+xml">
+    </div>
+
+    <div class="import-field">
+      <label for="targetTime">Temps cible</label>
+      <input id="targetTime" type="time" value="03:00">
+    </div>
+
+    <div class="import-field">
+      <label for="carbs">Glucides (g/h)</label>
+      <input id="carbs" type="number" min="0" step="5" value="60">
+    </div>
+
+    <div class="import-field">
+      <label for="strategyMode">Découpage de la stratégie</label>
+      <select id="strategyMode">
+        <option value="guided">Guidé — intervalles de temps</option>
+        <option value="manual">Manuel — points sur trace / profil</option>
+      </select>
+    </div>
+  </div>
+
+  <div id="guidedControls" class="import-guided-fields">
+    <div class="import-field">
+      <label for="intervalMode">Type d’intervalle</label>
+      <select id="intervalMode">
+        <option value="time">Toutes les X minutes</option>
+        <option value="km">Tous les X kilomètres</option>
+      </select>
+    </div>
+
+    <div class="import-field interval-value">
+      <label id="intervalLabel" for="interval">Intervalle entre prises (min)</label>
+      <input id="interval" type="number" min="5" step="5" value="30">
+    </div>
+  </div>
+
+  <div class="hidden" id="manualControls">
+    <button class="manual-point" id="startSplit">+ Positionner un point de découpage</button>
+    <button class="secondary" id="clearSplits">Effacer les points</button>
+    <div class="small" id="splitList">Aucun point de découpage.</div>
+  </div>
+
+  <div class="v25-placement-note" id="V27_MANUAL_NOTE">
+    <b>Sélection manuelle :</b> les points de découpage se positionnent sur le
+    <b>profil altimétrique</b>. Après chaque point, une confirmation te demande
+    si tu veux continuer à placer des sections.
+  </div>
+
+
+<div class="ravito-in-import">
+  <div class="ravito-section-title">2. Ravitaillements</div>
+  <div class="ravito-section-content">
+<div class="card">
+     <h2>
+      2. Ravitaillements
+     </h2>
+     <div class="v25-placement-note" id="V25_NOTE_2">
+      <b>
+       Ravitaillements
+      </b>
+      : les points se positionnent sur la
+      <b>
+       trace GPX
+      </b>
+      . Apr&egrave;s chaque ravitaillement, confirme si tu veux continuer &agrave; en placer.
+     </div>
+     <p class="notice">
+      Le point le plus proche de la trace est automatiquement s&eacute;lectionn&eacute;.
+     </p>
+     <button class="secondary" id="addRavito">
+      + Ajouter un ravitaillement
+     </button>
+     <div id="ravitos">
+     </div>
+    </div>
+  </div>
+</div>
+</div>
+</div>
+<div id="ravitoMapPlaceholder" class="popup-placeholder"></div>
+<div id="map">
+    </div>
+    <div class="profile v28-profile-container">
+     <h2>
+      Profil altim&eacute;trique
+     </h2>
+     <div class="chart">
+      <div class="profile-legend" id="elevationLegend">
+      </div>
+      <span id="manualProfilePlaceholder" aria-hidden="true"></span>
+      <canvas id="elevChart">
+      </canvas>
+      <div class="zoom-help">
+       Molette : zoom horizontal &middot; double-clic : r&eacute;initialiser le zoom &middot; d&eacute;placement de la souris : position sur la trace
+      </div>
+     </div>
+    </div>
+    <div class="profile">
+     <h2>
+      Strat&eacute;gie
+     </h2>
+     <div style="overflow:auto">
+      <table>
+       <thead>
+        <tr>
+         <th>
+          Km
+          <br/>
+          <small>
+           Cliquez sur le km pour ouvrir le profil
+           <br/>
+           <em>
+            (section uniquement)
+           </em>
+          </small>
+         </th>
+         <th>
+          D+ cumul&eacute;
+          <br/>
+          <small>
+           <em>
+            (D+ / D&minus; de la section uniquement)
+           </em>
+          </small>
+         </th>
+         <th>
+          Temps de course
+         </th>
+         <th>
+          Heure pr&eacute;vue
+         </th>
+         <th>
+          Produits
+         </th>
+         <th>
+          Objectif
+          <br/>
+          <small>
+           Glucides (g)
+           <br/>
+          </small>
+         </th>
+         <th>
+          Apport via la nutrition
+          <br/>
+          <small>
+           Glucides (g)
+           <br/>
+          </small>
+         </th>
+         <th>
+          &Eacute;cart
+          <br/>
+          <small>
+           Glucides (g)
+          </small>
+         </th>
+         <th>
+          Note
+         </th>
+         <th>
+          Alt.
+         </th>
+         <th>
+          Vitesse moyenne
+         </th>
+        </tr>
+       </thead>
+       <tbody id="plan">
+       </tbody>
+      </table>
+     </div>
+     <p class="notice">
+      Les produits sont propos&eacute;s automatiquement pour suivre l'objectif glucidique cumul&eacute;. Certaines lignes peuvent volontairement rester sans produit. Tu peux modifier les quantit&eacute;s et le nom de l'&eacute;v&eacute;nement directement dans la strat&eacute;gie.
+     </p>
+    </div>
+    <div class="profile">
+     <h2>
+      R&eacute;sum&eacute; des achats/ Produits &agrave; pr&eacute;voir
+     </h2>
+     <div class="notice" id="shoppingSummary">
+      G&eacute;n&egrave;re la strat&eacute;gie pour calculer automatiquement les quantit&eacute;s.
+     </div>
+    </div>
+   </section>
+  </main>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+  </script>
+  <!-- ====================== V36 — écoute des modifications manuelles des objectifs de section ====================== -->
+  <script>
+   /* V36 — écoute des modifications manuelles des objectifs de section */
+(function(){
+  if(window.__v36NutritionBound)return;
+  window.__v36NutritionBound=true;
+
+  document.addEventListener('change',function(e){
+    const el=e.target;
+    if(!el || !el.matches(
+      'input[data-section-target],input[data-nutrition-target],input.section-target,input.nutrition-target'
+    ))return;
+
+    const idx=Number(el.dataset.sectionIndex ?? el.dataset.index ?? el.closest('[data-section-index]')?.dataset.sectionIndex);
+    if(!Number.isFinite(idx))return;
+
+    const rows=window.currentPlan?.sections || window.currentPlan?.rows || window.plan || null;
+    if(Array.isArray(rows)){
+      const val=num(el.value);
+      v36SetNutritionValue(rows[idx],val);
+      v36RebalanceFutureNutrition(rows,idx);
+    }
+  });
+})();
+
+
+window.rebalanceNutritionFrom=function(index){
+  const rows=window.currentPlan?.sections || window.currentPlan?.rows || window.plan;
+  if(Array.isArray(rows))v36RebalanceFutureNutrition(rows,Number(index));
+};
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js">
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js">
+  </script>
+  <!-- ====================== V37 — compatibilité GPX route/trace ====================== -->
+  <script>
+   const map=L.map('map').setView([45.76,4.84],12);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap contributors'}).addTo(map);
+let track=[],line=null,ravitos=[],nutrition=[],markers=[],chart=null,addingRavito=false,splitPoints=[],addingSplit=false,miniCharts=[],profileCursorMarker=null;
+
+const products=[
+ {id:1,name:"Gel boost Naak 30",carbs:30,sodium:32,calories:119,selected:false},
+ {id:2,name:"Gel Maurten 100",carbs:25,sodium:55,calories:100,selected:false},
+ {id:3,name:"Gel TA",carbs:33,sodium:55,calories:133,selected:false},
+ {id:4,name:"Gel Overstim s energix",carbs:26,sodium:55,calories:102,selected:false},
+ {id:5,name:"Barre ultra Naak",carbs:22,sodium:450,calories:200,selected:false},
+ {id:6,name:"Gaufre ultra Naak",carbs:17,sodium:450,calories:140,selected:false},
+ {id:7,name:"Boisson Baouw 45g",carbs:38,sodium:450,calories:157,selected:false},
+ {id:8,name:"Boisson Naak 72g",carbs:57,sodium:450,calories:250,selected:false},
+ {id:9,name:"Boisson Pyrene 50g",carbs:46,sodium:450,calories:186,selected:false},
+ {id:10,name:"Pompote 90g",carbs:10,sodium:0,calories:55,selected:false},
+ {id:11,name:"Gommes TA",carbs:25,sodium:55,calories:98,selected:false},
+ {id:12,name:"Gommes Overstim s",carbs:32,sodium:55,calories:131,selected:false},
+];
+
+
+function renderProducts(){
+  const box=document.getElementById('products');
+  const selector=document.getElementById('productSelector');
+
+  // Liste déroulante des produits disponibles
+  selector.innerHTML='<option value="">Sélectionner un produit…</option>'+
+    products.map((p,i)=>`<option value="${i}">${p.name} · ${p.carbs} g · ${p.calories} kcal</option>`).join('');
+
+  // Produits actuellement sélectionnés : affichage très compact
+  box.innerHTML=products.filter(p=>p.selected).map((p)=>{
+    const i=products.indexOf(p);
+    return `<div class="selected-product">
+      <span class="selected-product-name">${p.name}</span>
+      <span>${p.carbs} g</span>
+      <span>${p.calories} kcal</span>
+      <button type="button" class="danger pdel" data-i="${i}" title="Retirer">×</button>
+    </div>`;
+  }).join('') || '<div class="small no-products">Aucun produit sélectionné.</div>';
+
+  box.querySelectorAll('.pdel').forEach(x=>x.onclick=()=>{
+    const i=+x.dataset.i;
+    products[i].selected=false;
+    renderProducts();
+    if(window.currentPlan) generate();
+  });
+}
+
+document.getElementById('productSelector').onchange=()=>{
+  const selector=document.getElementById('productSelector');
+  if(selector.value==='')return;
+
+  const i=+selector.value;
+  products[i].selected=true;
+
+  // Retour à l'invite pour pouvoir choisir immédiatement un autre produit.
+  selector.value='';
+  renderProducts();
+};
+
+document.getElementById('addProduct').onclick=()=>{
+  const name=prompt("Nom du produit ?");
+  if(!name)return;
+  const carbs=+prompt("Glucides par unité (g)","25")||0;
+  const calories=+prompt("Calories par unité","100")||0;
+  products.push({id:Date.now(),name,carbs,sodium:0,calories,selected:true,qty:0});
+  renderProducts();
+};
+
+renderProducts();
+
+function selectedProducts(){
+  return products.filter(p=>p.selected); 
+}
+
+function productOptions(selectedIds=[]){
+  const ids=Array.isArray(selectedIds)?selectedIds.map(String):[];
+  return selectedProducts().map(p=>`<option value="${p.id}" ${ids.includes(String(p.id))?'selected':''}>${p.name} · ${p.carbs} g · ${p.calories} kcal</option>`).join('');
+}
+
+function strategyProductEditor(productIds=[]){
+  const counts={};
+  (productIds||[]).forEach(id=>counts[String(id)]=(counts[String(id)]||0)+1);
+  const rows=selectedProducts().map(p=>{
+    const q=counts[String(p.id)]||0;
+    return `<div class="sp-item">
+      <span class="sp-name">${p.name}</span>
+      <input type="number" class="sp-qty" data-pid="${p.id}" min="0" value="${q}" aria-label="Quantité ${p.name}">
+    </div>`;
+  }).join('');
+  return `<div class="sp-list">${rows||'<span class="small">Aucun produit disponible</span>'}</div>`;
+}
+function selectedProductList(ids){
+  return (ids||[]).map(id=>productById(id)).filter(Boolean);
+}
+
+function nutritionTotals(ids){
+  const ps=selectedProductList(ids);
+  return {
+    carbs: ps.reduce((s,p)=>s+p.carbs,0),
+    calories: ps.reduce((s,p)=>s+p.calories,0)
+  };
+}
+
+function formatClock(start, elapsedMin){
+  if(!start) return '—';
+  const [h,m]=start.split(':').map(Number);
+  const total=h*60+m+elapsedMin;
+  const hh=Math.floor(total/60)%24, mm=Math.round(total%60);
+  return `${String(hh).padStart(2,'0')}:${String(mm).padStart(2,'0')}`;
+}
+
+function cumulativeTotals(plan, upto){
+  return plan.slice(0,upto+1).reduce((a,x)=>{
+    a.carbs+=x.actualCarbs||0; a.calories+=x.actualCalories||0;
+    a.target+=x.targetCarbs||0; return a;
+  },{carbs:0,calories:0,target:0});
+}
+
+function formatDurationHM(min){
+  min=Math.max(0,Math.round(min||0));
+  const h=Math.floor(min/60), m=min%60;
+  return String(h).padStart(2,'0')+':'+String(m).padStart(2,'0');
+}
+function formatTime(min){
+  const m=Math.floor(min), s=Math.round((min-m)*60);
+  return `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}${s?'.'+String(s).padStart(2,'0'):''}`;
+}
+
+function pacingForKm(km){
+  if(!track.length) return 0;
+  const v=document.getElementById('targetTime').value||'00:00', p=v.split(':').map(Number);
+  const totalMin=(p[0]||0)*60+(p[1]||0);
+  return elapsedAtDistanceTopo(km*1000,totalMin);
+}
+
+function productById(id){
+  return products.find(p=>String(p.id)===String(id));
+}
+
+function chooseProductsForTarget(targetCumulative, cumulativeAlready){
+  const selected=selectedProducts().filter(p=>(+p.carbs||0)>0);
+  if(!selected.length) return [];
+  const gap=Math.max(0,targetCumulative-cumulativeAlready);
+  // Do not force a product at every section. A small gap is left for a later section.
+  const tolerance=Math.max(10, Math.min(16, targetCumulative*0.06));
+  if(gap<=tolerance) return [];
+
+  // Search combinations up to 4 units/product, prioritising the smallest
+  // error to the cumulative target. A slight variety penalty avoids using
+  // the same product on every section when alternatives are equivalent.
+  const candidates=[];
+  const maxUnits=4;
+  function visit(i,carbs,ids,counts){
+    if(i===selected.length){
+      if(!ids.length) return;
+      const projected=cumulativeAlready+carbs;
+      const error=Math.abs(targetCumulative-projected);
+      const overshoot=Math.max(0,projected-targetCumulative);
+      const units=ids.length;
+      let variety=0;
+      selected.forEach((p,j)=>{if(counts[j]) variety += (j%4)*0.12 + Math.max(0,counts[j]-1)*0.08;});
+      candidates.push({ids:ids.slice(),error,overshoot,units,score:error+overshoot*0.55+units*0.10+variety});
+      return;
+    }
+    const p=selected[i], carb=+p.carbs||0;
+    for(let q=0;q<=maxUnits;q++){
+      const next=ids.slice(); for(let k=0;k<q;k++) next.push(String(p.id));
+      const nc=counts.slice(); nc[i]=q;
+      // Avoid exploring absurdly large totals.
+      if(carb*q <= gap+Math.max(25,carb*0.75)) visit(i+1,carbs+carb*q,next,nc);
+    }
+  }
+  visit(0,0,[],[]);
+  if(!candidates.length) return [];
+
+  // Strongly prefer not to overshoot the target; if exact is impossible,
+  // choose the closest result. Never force a product just because this is a section.
+  candidates.sort((a,b)=>a.score-b.score);
+  const best=candidates[0];
+  const near=candidates.filter(c=>c.score<=best.score+Math.max(1.5,best.score*0.10));
+  // Deterministic rotation by section target, so equivalent solutions vary.
+  const seed=Math.floor(targetCumulative/10)+Math.floor(cumulativeAlready/17);
+  return near[seed%near.length].ids;
+}
+
+function formatProductCounts(ids){
+  const c={};
+  (ids||[]).forEach(id=>{
+    const p=productById(id);
+    if(p)c[p.name]=(c[p.name]||0)+1;
+  });
+  return Object.entries(c).map(([n,q])=>`${q}× ${n}`).join(' + ')||'À définir';
+}
+
+
+/* V37 — compatibilité GPX route/trace */
+function getGPXTrackNodes(xml){
+  const trk=Array.from(xml.querySelectorAll("trkpt"));
+  return trk.length ? trk : Array.from(xml.querySelectorAll("rtept"));
+}
+
+function parseGPX(xmlText){
+  const xml = new DOMParser().parseFromString(xmlText, "application/xml");
+  if(xml.querySelector("parsererror")) throw new Error("Le fichier GPX est invalide ou illisible.");
+
+  // GPX classique : <trkpt>. Certains appareils exportent toutefois
+  // la trace sous forme de route : <rtept>. On accepte les deux formats.
+  const trkNodes = Array.from(xml.querySelectorAll("trkpt"));
+  const rteNodes = Array.from(xml.querySelectorAll("rtept"));
+  const nodes = trkNodes.length ? trkNodes : rteNodes;
+
+  const pts = nodes.map(pt=>{
+    const lat = parseFloat(pt.getAttribute("lat"));
+    const lon = parseFloat(pt.getAttribute("lon"));
+    const eleNode = pt.querySelector("ele");
+    const ele = eleNode ? parseFloat(eleNode.textContent) : 0;
+    if(!Number.isFinite(lat) || !Number.isFinite(lon)) return null;
+    return {lat,lon,ele:Number.isFinite(ele)?ele:0,dist:0};
+  }).filter(Boolean);
+
+  if(pts.length < 2){
+    throw new Error("Aucune trace exploitable trouvée dans ce fichier GPX (trkpt ou rtept).");
+  }
+
+  let d=0;
+  pts[0].dist=0;
+  for(let i=1;i<pts.length;i++){
+    d += haversine(pts[i-1].lat,pts[i-1].lon,pts[i].lat,pts[i].lon);
+    pts[i].dist=d;
+  }
+  return pts;
+}
+
+function haversine(lat1,lon1,lat2,lon2){
+  const R=6371000, rad=Math.PI/180;
+  const p1=lat1*rad,p2=lat2*rad;
+  const dp=(lat2-lat1)*rad, dl=(lon2-lon1)*rad;
+  const a=Math.sin(dp/2)**2 + Math.cos(p1)*Math.cos(p2)*Math.sin(dl/2)**2;
+  return 2*R*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function calc(){
+  if(!track.length) return {dist:0,dplus:0,max:0,min:0};
+  let dplus=0,max=-Infinity,min=Infinity;
+  for(let i=0;i<track.length;i++){
+    const e=Number(track[i].ele)||0;
+    max=Math.max(max,e);
+    min=Math.min(min,e);
+    if(i>0){
+      const de=e-(Number(track[i-1].ele)||0);
+      if(de>0) dplus+=de;
+    }
+  }
+  return {dist:track[track.length-1].dist||0,dplus,max,min};
+}
+
+function cumulativeDplus(index){
+  if(!track.length || index<0) return 0;
+  let d=0;
+  for(let i=1;i<=index;i++){
+    const de=(Number(track[i].ele)||0)-(Number(track[i-1].ele)||0);
+    if(de>0) d+=de;
+  }
+  return d;
+}
+function dplusAtDistance(targetDist){
+  if(!track.length) return 0;
+  let d=0;
+  for(let i=1;i<track.length;i++){
+    if(track[i].dist>targetDist) break;
+    const de=(Number(track[i].ele)||0)-(Number(track[i-1].ele)||0);
+    if(de>0) d+=de;
+  }
+  return d;
+}
+function elevationDeltaBetween(startDist,endDist){
+  let up=0,down=0;
+  if(!track.length)return {up:0,down:0};
+  let prev=pointAt(startDist)||track[0];
+  for(const p of track){
+    if(p.dist<=startDist) continue;
+    if(p.dist>endDist) break;
+    const de=(Number(p.ele)||0)-(Number(prev.ele)||0);
+    if(de>0) up+=de; else down+=-de;
+    prev=p;
+  }
+  const end=pointAt(endDist)||prev;
+  const de=(Number(end.ele)||0)-(Number(prev.ele)||0);
+  if(de>0) up+=de; else down+=-de;
+  return {up,down};
+}
+
+function averageSpeedKmh(km, elapsedMin){
+  return elapsedMin>0 ? km/(elapsedMin/60) : 0;
+}
+
+function pointAt(targetDist){
+  if(!track.length) return null;
+  if(targetDist<=0) return {...track[0],dist:0};
+  const total=track[track.length-1].dist;
+  if(targetDist>=total) return {...track[track.length-1],dist:total};
+
+  let lo=0,hi=track.length-1;
+  while(lo<hi){
+    const mid=Math.floor((lo+hi)/2);
+    if(track[mid].dist<targetDist) lo=mid+1;
+    else hi=mid;
+  }
+  const b=track[lo],a=track[lo-1];
+  const span=b.dist-a.dist;
+  const f=span ? (targetDist-a.dist)/span : 0;
+  return {
+    lat:a.lat+(b.lat-a.lat)*f,
+    lon:a.lon+(b.lon-a.lon)*f,
+    ele:a.ele+(b.ele-a.ele)*f,
+    dist:targetDist
+  };
+}
+
+
+function elevationSlopePct(a,b){
+  const dx=(b.dist-a.dist);
+  if(dx<=0) return 0;
+  return ((b.ele-a.ele)/dx)*100;
+}
+function slopeColor(pct,area=false){
+  const a=Math.abs(pct);
+  if(a<5) return area?'#2e7d32':'#2e7d32';
+  if(a<10) return area?'#f1c40f':'#f1c40f';
+  if(a<15) return area?'#f39c12':'#f39c12';
+  if(a<20) return area?'#e67e22':'#e67e22';
+  return area?'#c0392b':'#c0392b';
+}
+function nearestTrackPointFromX(xIndex, labels){
+  const idx=Math.max(0,Math.min(labels.length-1,Math.round(xIndex)));
+  return pointAt(parseFloat(labels[idx])*1000);
+}
+
+/* =========================================================
+   PACING TOPOGRAPHIQUE — MODÈLE DE MINETTI
+   Le temps cible reste exactement respecté. Le poids de chaque
+   segment est calculé à partir du coût énergétique de la course
+   selon la pente, avec le modèle de Minetti et al. (2002).
+   ========================================================= */
+
+function slopePacingFactor(pct){
+  /*
+   * Base physiologique : Minetti et al. (2002).
+   * Pour les descentes très raides, on ajoute progressivement
+   * une pénalité technique à partir de -20 %.
+   *
+   * La pénalité est nulle à -20 %, puis augmente de façon
+   * progressive jusqu'à +60 % de temps à -45 %.
+   * Au-delà de -45 %, on reste sur la pénalité de -45 %.
+   */
+  const rawPct=Number(pct)||0;
+  const grade=Math.max(-0.45,Math.min(0.45,rawPct/100));
+  const i=grade;
+
+  const cost =
+      155.4*Math.pow(i,5)
+    - 30.4*Math.pow(i,4)
+    - 43.3*Math.pow(i,3)
+    + 46.3*Math.pow(i,2)
+    + 19.5*i
+    + 3.6;
+
+  let factor=cost/3.6;
+
+  // Descente très raide : correction technique progressive.
+  if(rawPct < -20){
+    const steep=Math.min(25,Math.abs(rawPct)-20); // 0 à 25 points
+    const technicalPenalty=1 + 0.60*(steep/25);
+    factor*=technicalPenalty;
+  }
+
+  return factor;
+}
+
+function trackSlopePctAtSegment(i){
+  if(i<=0 || i>=track.length) return 0;
+  const a=track[i-1], b=track[i];
+  const dx=Number(b.dist)-Number(a.dist);
+  if(!(dx>0)) return 0;
+  return ((Number(b.ele||0)-Number(a.ele||0))/dx)*100;
+}
+
+function pacingProfile(durationMin){
+  if(!track.length || track.length<2 || !(durationMin>0)) return null;
+
+  const totalDist=Number(track[track.length-1].dist)||0;
+  if(!(totalDist>0)) return null;
+
+  const cumulative=[0];
+  let weightedTotal=0;
+
+  for(let i=1;i<track.length;i++){
+    const a=track[i-1], b=track[i];
+    const ds=Math.max(0,Number(b.dist)-Number(a.dist));
+    const grade=trackSlopePctAtSegment(i);
+    const factor=slopePacingFactor(grade);
+
+    // ds * facteur = "distance-temps" pondérée.
+    weightedTotal += ds*factor;
+    cumulative.push(weightedTotal);
+  }
+
+  return {
+    totalDist,
+    durationMin,
+    cumulative,
+    weightedTotal
+  };
+}
+
+function elapsedAtDistanceTopo(dist,durationMin){
+  const prof=pacingProfile(durationMin);
+  if(!prof) return durationMin*(dist/(track[track.length-1].dist||1));
+
+  const d=Math.max(0,Math.min(prof.totalDist,Number(dist)||0));
+  if(d<=0)return 0;
+  if(d>=prof.totalDist)return durationMin;
+
+  let lo=0,hi=track.length-1;
+  while(lo<hi){
+    const mid=Math.floor((lo+hi)/2);
+    if(track[mid].dist<d)lo=mid+1; else hi=mid;
+  }
+
+  const b=track[lo],a=track[lo-1];
+  const ds=Math.max(0,Number(b.dist)-Number(a.dist));
+  const f=ds?(d-Number(a.dist))/ds:0;
+  const wa=prof.cumulative[lo-1];
+  const wb=prof.cumulative[lo];
+  const w=wa+(wb-wa)*f;
+
+  return durationMin*(w/prof.weightedTotal);
+}
+
+function distanceAtElapsedTopo(elapsedMin,durationMin,prof){
+  if(!prof)return (elapsedMin/durationMin)*(track[track.length-1].dist);
+  if(elapsedMin<=0)return 0;
+  if(elapsedMin>=durationMin)return prof.totalDist;
+
+  const target=prof.weightedTotal*(elapsedMin/durationMin);
+
+  let lo=0,hi=prof.cumulative.length-1;
+  while(lo<hi){
+    const mid=Math.floor((lo+hi)/2);
+    if(prof.cumulative[mid]<target)lo=mid+1; else hi=mid;
+  }
+
+  const a=track[lo-1],b=track[lo];
+  const wa=prof.cumulative[lo-1],wb=prof.cumulative[lo];
+  const f=(wb-wa)?(target-wa)/(wb-wa):0;
+
+  return Number(a.dist)+(Number(b.dist)-Number(a.dist))*f;
+}
+
+function topoAverageSpeedKmh(dist,elapsedMin){
+  return elapsedMin>0 ? (Number(dist)/1000)/(elapsedMin/60) : 0;
+}
+
+function splitDistances(duration){
+  const totalDist=track[track.length-1].dist;
+  if(document.getElementById('strategyMode')?.value==='manual'){
+    return splitPoints.map(x=>x.dist).filter(d=>d>0 && d<totalDist).sort((a,b)=>a-b).concat([totalDist]);
+  }
+  const mode=document.getElementById('intervalMode')?.value||'time';
+  const val=Math.max(0.1,+document.getElementById('interval').value||30);
+  const out=[];
+  if(mode==='km'){
+    const step=val*1000;
+    for(let d=step;d<totalDist;d+=step) out.push(d);
+  }else{
+    const step=val;
+    const prof=pacingProfile(duration);
+    for(let elapsed=step;elapsed<duration;elapsed+=step){
+      out.push(distanceAtElapsedTopo(elapsed,duration,prof));
+    }
+  }
+  out.push(totalDist);
+  return out;
+}
+function renderSplitList(){
+  const el=document.getElementById('splitList'); if(!el)return;
+  if(!splitPoints.length){el.textContent='Aucun point de découpage.';return;}
+  el.innerHTML=splitPoints.map((p,i)=>`<span class="pill">Portion ${i+1} · km ${(p.dist/1000).toFixed(1)} <button data-s="${i}" style="width:auto;padding:1px 5px;margin:0;background:#fff;color:#111">×</button></span>`).join(' ');
+  el.querySelectorAll('button').forEach(b=>b.onclick=()=>{splitPoints.splice(+b.dataset.s,1);renderSplitList();renderMap();renderChart();});
+}
+
+function v22StopManualSelection(){
+  if(typeof addingSplit!=='undefined') addingSplit=false;
+  const b=document.getElementById('startSplit');
+  if(b){b.classList.remove('active','selected');b.textContent='+ Positionner un point de découpage';}
+}
+
+function addSplitAtPoint(p){
+  if(!p || !track.length)return false;
+  const minGap=100;
+  const total=track[track.length-1].dist;
+  if(p.dist<minGap || p.dist>total-minGap)return false;
+  if(splitPoints.some(x=>Math.abs(x.dist-p.dist)<minGap))return false;
+  splitPoints.push({...p});
+  splitPoints.sort((a,b)=>a.dist-b.dist);
+  renderSplitList(); renderMap(); renderChart();
+  return true;
+}
+function toggleSplitMode(){
+  addingSplit=!addingSplit;
+  const b=document.getElementById('startSplit');
+  if(b)b.textContent=addingSplit?'Clique sur la trace ou le profil pour placer un point':'+ Positionner un point de découpage';
+}
+function showPortionProfile(index){
+  const x=(window.currentPlan||[])[index];
+  if(!x)return;
+  const start=x.startDist||0,end=x.p.dist;
+  const pts=track.filter(p=>p.dist>=start&&p.dist<=end);
+  if(pts.length<2)return;
+  let modal=document.getElementById('portionModal');
+  if(!modal){
+    modal=document.createElement('div');modal.id='portionModal';modal.className='portion-modal';
+    modal.innerHTML='<div class="portion-modal-card"><button id="closePortionModal">×</button><h3 id="portionModalTitle"></h3><div class="portion-legend v22-popup-legend"><span><i style="background:#2e7d32"></i>&lt; 5 %</span><span><i style="background:#f1c40f"></i>5–10 %</span><span><i style="background:#f39c12"></i>10–15 %</span><span><i style="background:#e67e22"></i>15–20 %</span><span><i style="background:#c0392b"></i>&gt; 20 %</span></div><canvas id="portionModalCanvas"></canvas></div>';
+    document.body.appendChild(modal);
+    document.getElementById('closePortionModal').onclick=()=>modal.classList.remove('open');
+    modal.onclick=e=>{if(e.target===modal)modal.classList.remove('open')};
+  }
+  document.getElementById('portionModalTitle').textContent=`Portion ${index+1} · km ${(start/1000).toFixed(1)} → ${(end/1000).toFixed(1)}`;
+  modal.classList.add('open');
+  const canvas=document.getElementById('portionModalCanvas'),ctx=canvas.getContext('2d');
+  const w=Math.min(900,Math.max(500,modal.querySelector('.portion-modal-card').clientWidth-40)),h=260,dpr=devicePixelRatio||1;
+  canvas.width=w*dpr;canvas.height=h*dpr;canvas.style.width=w+'px';canvas.style.height=h+'px';ctx.setTransform(dpr,0,0,dpr,0,0);
+  const min=Math.min(...pts.map(p=>p.ele)),max=Math.max(...pts.map(p=>p.ele)),span=Math.max(1,max-min);
+  ctx.clearRect(0,0,w,h);
+  // Axes et graduations kilométriques
+  ctx.strokeStyle='#999';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(0,h-25);ctx.lineTo(w,h-25);ctx.stroke();
+  ctx.fillStyle='#333';ctx.font='11px Arial';ctx.textAlign='center';
+  const kmStart=start/1000, kmEnd=end/1000, kmSpan=Math.max(.001,kmEnd-kmStart);
+  const ticks=Math.max(1,Math.min(8,Math.floor(w/90)));
+  for(let q=0;q<=ticks;q++){
+    const frac=q/ticks,x=frac*w,km=kmStart+frac*kmSpan;
+    ctx.beginPath();ctx.moveTo(x,h-25);ctx.lineTo(x,h-20);ctx.stroke();
+    ctx.fillText(km.toFixed(1)+' km',x,h-7);
+  }
+  for(let j=1;j<pts.length;j++){
+    const a=pts[j-1],b=pts[j],x1=(a.dist-start)/(end-start)*w,x2=(b.dist-start)/(end-start)*w;
+    const y1=h-25-(a.ele-min)/span*(h-45),y2=h-25-(b.ele-min)/span*(h-45);
+    ctx.beginPath();ctx.moveTo(x1,h-25);ctx.lineTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineTo(x2,h-25);ctx.closePath();
+    ctx.fillStyle=slopeColor(elevationSlopePct(a,b));ctx.globalAlpha=.2;ctx.fill();ctx.globalAlpha=1;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.strokeStyle=slopeColor(elevationSlopePct(a,b));ctx.lineWidth=3;ctx.stroke();
+  }
+}
+
+function carryToNextRavito(rIndex,plan){
+  const from=rIndex<0?0:ravitos[rIndex].dist;
+  const to=rIndex+1<ravitos.length?ravitos[rIndex+1].dist:track[track.length-1].dist;
+  const counts={};
+  plan.forEach(x=>{
+    if(x.p.dist>from && x.p.dist<=to){
+      (x.productIds||[]).forEach(id=>{const p=productById(id);if(p)counts[p.name]=(counts[p.name]||0)+1});
+    }
+  });
+  return Object.entries(counts).map(([n,q])=>`${q}× ${n}`).join(' + ')||'Aucun produit';
+}
+
+function renderMap(){
+  if(!track.length) return;
+  if(line) map.removeLayer(line);
+  line=L.polyline(track.map(p=>[p.lat,p.lon]),{weight:5}).addTo(map);
+  map.fitBounds(line.getBounds(),{padding:[20,20]});
+
+  markers.forEach(m=>map.removeLayer(m));
+  markers=[];
+  ravitos.forEach(r=>{
+    const m=L.marker([r.lat,r.lon]).addTo(map).bindPopup(r.name);
+    markers.push(m);
+  });
+}
+
+
+// Profil altimétrique : aire + ligne colorées selon la pente, ravitos, découpages et curseur.
+let profileCursorDist=null;
+const slopeAreaPlugin={
+  id:'slopeArea',
+  beforeDatasetsDraw(chart){
+    if(!track.length) return;
+    const area=chart.chartArea, meta=chart.getDatasetMeta(0), pts=meta.data;
+    if(!pts || pts.length<2) return;
+    const ctx=chart.ctx;
+    ctx.save();
+    for(let i=1;i<pts.length;i++){
+      const a=track[Math.min(track.length-1,i*profileChartStep)];
+      const b=track[Math.min(track.length-1,(i+1)*profileChartStep)];
+      if(!a||!b) continue;
+      const x1=pts[i-1].x,x2=pts[i].x,y1=pts[i-1].y,y2=pts[i].y;
+      ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.lineTo(x2,area.bottom);ctx.lineTo(x1,area.bottom);ctx.closePath();
+      ctx.globalAlpha=.18;ctx.fillStyle=slopeColor(elevationSlopePct(a,b),true);ctx.fill();
+    }
+    ctx.restore();
+  }
+};
+const splitPlugin={
+  id:'splitMarkers',
+  afterDatasetsDraw(chart){
+    const ctx=chart.ctx,area=chart.chartArea;
+    ctx.save();
+    splitPoints.forEach((p,i)=>{
+      const x=chart.scales.x.getPixelForValue(p.dist/1000);
+      if(!Number.isFinite(x)||x<area.left||x>area.right)return;
+      ctx.beginPath();ctx.moveTo(x,area.top);ctx.lineTo(x,area.bottom);
+      ctx.setLineDash([5,4]);ctx.lineWidth=1.5;ctx.strokeStyle='#111';ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='#111';ctx.font='bold 10px Arial';ctx.textAlign='center';ctx.fillText(`P${i+1}`,x,area.top+14);
+    });
+    if(profileCursorDist!=null){
+      const x=chart.scales.x.getPixelForValue(profileCursorDist/1000);
+      if(x>=area.left&&x<=area.right){
+        ctx.beginPath();ctx.moveTo(x,area.top);ctx.lineTo(x,area.bottom);
+        ctx.lineWidth=2;ctx.strokeStyle='#0066ff';ctx.stroke();
+        ctx.beginPath();ctx.arc(x,area.top+8,5,0,Math.PI*2);ctx.fillStyle='#0066ff';ctx.fill();
+      }
+    }
+    ctx.restore();
+  }
+};
+let profileChartStep=1;
+
+function updateProfileCursorOnMap(dist){
+  if(!track.length)return;
+  const p=pointAt(dist);
+  if(!p)return;
+  if(!profileCursorMarker){
+    profileCursorMarker=L.circleMarker([p.lat,p.lon],{radius:6,color:'#06f',fillColor:'#06f',fillOpacity:.9,weight:2}).addTo(map);
+  }else profileCursorMarker.setLatLng([p.lat,p.lon]);
+}
+
+function renderChart(){
+  const canvas=document.getElementById('elevChart');
+  if(!canvas || !track.length) return;
+  if(chart) chart.destroy();
+
+  const totalKm=track[track.length-1].dist/1000;
+  // Une maille visuelle d'au moins 75 m pour que les changements de pente restent lisibles.
+  const stepDist=100;
+  const data=[];
+  for(let d=0;d<track[track.length-1].dist;d+=stepDist){
+    const p=pointAt(d); if(p)data.push({x:d/1000,y:p.ele});
+  }
+  const last=track[track.length-1];
+  data.push({x:last.dist/1000,y:last.ele});
+
+  const ravitoPlugin={id:'ravitoMarkers',afterDatasetsDraw(ch){
+    const ctx=ch.ctx,area=ch.chartArea;ctx.save();
+    ravitos.forEach(r=>{
+      const x=ch.scales.x.getPixelForValue(r.dist/1000), y=ch.scales.y.getPixelForValue(r.ele);
+      if(x<area.left||x>area.right)return;
+      ctx.setLineDash([3,3]);ctx.strokeStyle='#c0392b';ctx.lineWidth=1;
+      ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x,area.bottom);ctx.stroke();ctx.setLineDash([]);
+      ctx.fillStyle='#c0392b';ctx.beginPath();ctx.arc(x,y,5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#9b1c1c';ctx.font='bold 10px Arial';ctx.textAlign='center';
+      ctx.fillText(r.name,x,Math.max(area.top+12,y-10));
+      ctx.font='9px Arial';ctx.fillText((r.dist/1000).toFixed(1)+' km',x,Math.max(area.top+22,y-21));
+    });ctx.restore();
+  }};
+
+  const legend=document.getElementById('elevationLegend');
+  if(legend) legend.innerHTML=`<div class="legend-title">Pourcentage d'élévation du terrain</div>
+    <span><i style="background:#2e7d32"></i>&lt; 5 %</span>
+    <span><i style="background:#f1c40f"></i>5–10 %</span>
+    <span><i style="background:#f39c12"></i>10–15 %</span>
+    <span><i style="background:#e67e22"></i>15–20 %</span>
+    <span><i style="background:#c0392b"></i>&gt; 20 %</span>`;
+
+  chart=new Chart(canvas.getContext('2d'),{
+    type:'line',
+    data:{datasets:[{
+      label:'Altitude (m)',data,fill:false,tension:.12,pointRadius:0,borderWidth:2,
+      segment:{borderColor:c=>{
+        const a=pointAt(c.p0.parsed.x*1000),b=pointAt(c.p1.parsed.x*1000);
+        return slopeColor(a&&b?elevationSlopePct(a,b):0);
+      }}
+    }]},
+    plugins:[slopeAreaPlugin,ravitoPlugin,splitPlugin],
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      layout:{padding:{top:22,right:8,bottom:4,left:4}},
+      interaction:{mode:'nearest',intersect:false},
+      onHover:(evt)=>{
+        const x=evt.x;
+        if(Number.isFinite(x) && x>=chart.chartArea.left && x<=chart.chartArea.right){
+          profileCursorDist=Math.max(0,Math.min(last.dist,chart.scales.x.getValueForPixel(x)*1000));
+          updateProfileCursorOnMap(profileCursorDist); chart.draw();
+        }
+      },
+      onClick:(evt)=>{
+        if(!addingSplit)return;
+        const x=evt.x;
+        if(!Number.isFinite(x)||x<chart.chartArea.left||x>chart.chartArea.right)return;
+        const dist=chart.scales.x.getValueForPixel(x)*1000;
+        if(dist>=100 && dist<=last.dist-100){
+  if(addSplitAtPoint(pointAt(dist))){
+      v24AskContinue('section',v24ContinueSection,v24StopSection);
+    }
+}
+      },
+      scales:{
+        x:{type:'linear',min:0,max:totalKm,title:{display:true,text:'Distance (km)'},
+          ticks:{stepSize:2,autoSkip:false,callback:v=>Number(v).toFixed(1),font:ctx=>({weight:(Number(ctx.tick?.value)%10===0)?'bold':'normal'})}},
+        y:{type:'linear',title:{display:true,text:'Altitude (m)'},ticks:{callback:v=>Number(v).toFixed(1)}}
+      },
+      plugins:{legend:{display:false},tooltip:{callbacks:{
+        title:items=>items.length?`${Number(items[0].parsed.x).toFixed(1)} km`:'',
+        label:ctx=>{
+          const d=ctx.parsed.x*1000,p=pointAt(d),p2=pointAt(Math.min(last.dist,d+75));
+          return `Altitude : ${Number(ctx.parsed.y).toFixed(1)} m · pente : ${p&&p2?elevationSlopePct(p,p2).toFixed(1):'0.0'} %`;
+        }
+      }}}
+    }
+  });
+  window.chart=chart;
+  canvas.onmousemove=e=>{
+    if(!chart)return;
+    const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*(canvas.width/r.width);
+    const sc=chart.scales.x;
+    if(x<sc.left||x>sc.right)return;
+    profileCursorDist=sc.getValueForPixel(x)*1000;
+    updateProfileCursorOnMap(profileCursorDist);chart.draw();
+  };
+}
+
+// Zoom horizontal du profil sans plugin externe.
+function resetProfileZoom(){ if(chart&&track.length){ chart.options.scales.x.min=0; chart.options.scales.x.max=track[track.length-1].dist/1000; chart.update('none'); } }
+document.getElementById('elevChart')?.addEventListener('wheel',e=>{
+  if(!chart||!track.length)return; e.preventDefault();
+  const rect=e.currentTarget.getBoundingClientRect(), px=(e.clientX-rect.left)*(e.currentTarget.width/rect.width);
+  const sc=chart.scales.x, center=sc.getValueForPixel(px); const range=(sc.max-sc.min)*(e.deltaY>0?1.18:.82);
+  const min=Math.max(0,center-(center-sc.min)*range/(sc.max-sc.min)); const max=Math.min(track[track.length-1].dist/1000,min+range);
+  chart.options.scales.x.min=min; chart.options.scales.x.max=max; chart.update('none');
+},{passive:false});
+document.getElementById('elevChart')?.addEventListener('dblclick',resetProfileZoom);
+
+function renderRavitos(){
+  const box=document.getElementById('ravitos');
+  if(!box) return;
+  box.innerHTML='';
+  ravitos.forEach((r,i)=>{
+    const d=document.createElement('div');
+    d.className='ravito';
+    d.innerHTML=`<span><b>${r.name}</b><br><span class="small">${(r.dist/1000).toFixed(1)} km · ${Math.round(r.ele)} m</span></span>
+      <button class="danger" data-i="${i}" style="width:auto;margin:0;padding:5px 8px">×</button>`;
+    d.querySelector('button').onclick=()=>{
+      ravitos.splice(i,1);
+      renderRavitos();
+      renderMap();
+      setTimeout(()=>{map.invalidateSize(); renderMap();},50);
+      renderChart();
+      if(window.currentPlan) generate();
+    };
+    box.appendChild(d);
+  });
+}
+
+function addRavitoAt(latlng){
+  if(!track.length) return false;
+  let best=pointAt(0),bd=Infinity;
+  for(const p of track){
+    const d=haversine(latlng.lat,latlng.lng,p.lat,p.lon);
+    if(d<bd){bd=d;best=p;}
+  }
+  const name=prompt("Nom du ravitaillement ?",`Ravitaillement ${ravitos.length+1}`);
+  if(!name) return false;
+  ravitos.push({name,lat:best.lat,lon:best.lon,ele:best.ele,dist:best.dist});
+  ravitos.sort((a,b)=>a.dist-b.dist);
+  renderRavitos();
+  renderMap();
+  renderChart();
+  if(window.currentPlan) generate();
+  return true;
+}
+
+map.on('click',e=>{
+  if(addingSplit){
+    let best=track[0],bd=Infinity; for(const p of track){const d=haversine(e.lat,e.lng,p.lat,p.lon);if(d<bd){bd=d;best=p}}
+    if(addSplitAtPoint(best)){
+      v24AskContinue('section',v24ContinueSection,v24StopSection);
+    } return;
+  }
+  if(addingRavito){
+    const added=addRavitoAt(e.latlng);
+    if(added){
+      const status=document.getElementById('ravitoMapStatus');
+      if(status) status.textContent='Ravitaillement ajouté. Choisis une option ci-dessous.';
+      v24AskContinue('ravito',v24ContinueRavito,v24StopRavito);
+    }else{
+      addingRavito=false;
+      document.getElementById('addRavito').textContent='+ Ajouter un ravitaillement';
+    }
+  }
+});
+
+document.getElementById('strategyMode')?.addEventListener('change',()=>{
+  const guided=document.getElementById('guidedControls'), manual=document.getElementById('manualControls');
+  const isManual=document.getElementById('strategyMode').value==='manual';
+  guided?.classList.toggle('hidden',isManual); manual?.classList.toggle('hidden',!isManual);
+  if(!isManual){addingSplit=false;}
+});
+document.getElementById('intervalMode')?.addEventListener('change',()=>{
+  const mode=document.getElementById('intervalMode').value;
+  const label=document.getElementById('intervalLabel');
+  const input=document.getElementById('interval');
+  if(mode==='km'){label.textContent='Intervalle entre prises (km)';input.min='0.5';input.step='0.5';input.value='5';}
+  else {label.textContent='Intervalle entre prises (min)';input.min='5';input.step='5';input.value='30';}
+});
+function syncPopupScrollLock(){
+  const manualOpen=document.getElementById('manualProfileModal')?.classList.contains('open');
+  const ravitoOpen=document.getElementById('ravitoMapModal')?.classList.contains('open');
+  const locked=manualOpen || ravitoOpen;
+
+  document.body.classList.toggle('manual-modal-open', locked);
+
+  // Nettoyage explicite : évite qu'un ancien overflow:hidden reste bloqué
+  // après la fermeture du dernier pop-up.
+  if(!locked){
+    document.documentElement.style.removeProperty('overflow');
+    document.body.style.removeProperty('overflow');
+    document.body.classList.remove('manual-modal-open');
+  }
+}
+
+function openManualProfilePopup(){
+  if(!track.length){alert("Importe d'abord une trace GPX.");return;}
+
+  const modal=document.getElementById('manualProfileModal');
+  const canvas=document.getElementById('elevChart');
+  const host=document.getElementById('manualProfileCanvasHost');
+  const placeholder=document.getElementById('manualProfilePlaceholder');
+  if(!modal || !canvas || !host || !placeholder)return;
+
+  // Désactiver le clic pendant que le canvas change de taille.
+  addingSplit=false;
+
+  placeholder.parentNode.insertBefore(placeholder, canvas);
+  host.appendChild(canvas);
+
+  modal.classList.add('open');
+  syncPopupScrollLock();
+
+  // IMPORTANT : recréer le graphique après le déplacement du canvas.
+  // Cela recalcule chartArea + échelle X/Y avant le premier clic.
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      renderChart();
+      requestAnimationFrame(()=>{
+        if(window.chart){
+          window.chart.resize();
+          window.chart.update('none');
+        }
+        addingSplit=true;
+        const b=document.getElementById('startSplit');
+        if(b){
+          b.classList.add('active');
+          b.textContent='Clique sur le profil pour placer un point';
+        }
+        const status=document.getElementById('manualProfileStatus');
+        if(status) status.textContent='Clique sur le profil pour placer un point.';
+      });
+    });
+  });
+}
+
+function closeManualProfilePopup(){
+  const modal=document.getElementById('manualProfileModal');
+  const canvas=document.getElementById('elevChart');
+  const placeholder=document.getElementById('manualProfilePlaceholder');
+  if(!modal || !canvas || !placeholder)return;
+
+  addingSplit=false;
+  placeholder.parentNode.insertBefore(canvas, placeholder.nextSibling);
+
+  modal.classList.remove('open');
+  syncPopupScrollLock();
+
+  requestAnimationFrame(()=>{
+    renderChart();
+    if(window.chart){
+      window.chart.resize();
+      window.chart.update('none');
+    }
+  });
+}
+
+document.getElementById('startSplit')?.addEventListener('click',()=>{
+  if(!track.length){alert("Importe d'abord une trace GPX.");return;}
+  toggleSplitMode();
+  if(addingSplit) openManualProfilePopup();
+});
+
+document.getElementById('closeManualProfileModal')?.addEventListener('click',closeManualProfilePopup);
+
+document.getElementById('finishManualProfile')?.addEventListener('click',()=>{
+  v22StopManualSelection();
+  closeManualProfilePopup();
+});
+
+document.getElementById('manualProfileModal')?.addEventListener('click',e=>{
+  if(e.target.id==='manualProfileModal') closeManualProfilePopup();
+});
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    if(document.getElementById('manualProfileModal')?.classList.contains('open')) closeManualProfilePopup();
+    if(document.getElementById('ravitoMapModal')?.classList.contains('open')) closeRavitoPopup();
+  }
+});
+document.getElementById('clearSplits')?.addEventListener('click',()=>{splitPoints=[];renderSplitList();renderMap();renderChart();});
+function openRavitoPopup(){
+  if(!track.length){alert("Importe d'abord une trace GPX.");return;}
+
+  const modal=document.getElementById('ravitoMapModal');
+  const mapHost=document.getElementById('ravitoMapHost');
+  const placeholder=document.getElementById('ravitoMapPlaceholder');
+  if(!modal || !mapHost || !placeholder || typeof map==='undefined')return;
+
+  addingRavito=false;
+
+  // Déplacer la vraie carte Leaflet : on conserve tous ses événements.
+  placeholder.parentNode.insertBefore(placeholder, map.getContainer());
+  mapHost.appendChild(map.getContainer());
+
+  modal.classList.add('open');
+  syncPopupScrollLock();
+
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      map.invalidateSize(true);
+      addingRavito=true;
+
+      const b=document.getElementById('addRavito');
+      if(b){
+        b.classList.add('active');
+        b.textContent='Clique sur la trace pour choisir le ravitaillement';
+      }
+      const status=document.getElementById('ravitoMapStatus');
+      if(status) status.textContent='Clique sur la trace GPX pour placer le ravitaillement.';
+    });
+  });
+}
+
+function closeRavitoPopup(){
+  const modal=document.getElementById('ravitoMapModal');
+  const mapEl=(typeof map!=='undefined') ? map.getContainer() : null;
+  const placeholder=document.getElementById('ravitoMapPlaceholder');
+  if(!modal || !mapEl || !placeholder)return;
+
+  addingRavito=false;
+  placeholder.parentNode.insertBefore(mapEl,placeholder.nextSibling);
+
+  modal.classList.remove('open');
+  syncPopupScrollLock();
+
+  const b=document.getElementById('addRavito');
+  if(b){
+    b.classList.remove('active');
+    b.textContent='+ Ajouter un ravitaillement';
+  }
+
+  requestAnimationFrame(()=>{ if(typeof map!=='undefined') map.invalidateSize(true); });
+}
+
+document.getElementById('addRavito').onclick=()=>{
+  if(!track.length){alert("Importe d'abord une trace GPX.");return;}
+  openRavitoPopup();
+};
+
+document.getElementById('closeRavitoMapModal')?.addEventListener('click',closeRavitoPopup);
+document.getElementById('finishRavitoMap')?.addEventListener('click',closeRavitoPopup);
+
+document.getElementById('ravitoMapModal')?.addEventListener('click',e=>{
+  if(e.target.id==='ravitoMapModal') closeRavitoPopup();
+});
+
+function syncTargetTimeDisplay(){
+  const el=document.getElementById('targetTimeDisplay'), input=document.getElementById('targetTime');
+  if(el && input) el.textContent=input.value||'00:00';
+}
+document.getElementById('targetTime')?.addEventListener('input',syncTargetTimeDisplay);
+syncTargetTimeDisplay();
+
+
+/* V36 — rééquilibrage nutritionnel des sections futures */
+function v36NutritionTarget(row){
+  return num(row?.target ?? row?.objective ?? row?.glucidesTarget ?? row?.carbsTarget ?? 0);
+}
+
+function v36SetNutritionValue(row,value){
+  value=Math.max(0,Math.round(num(value)));
+  if(row){
+    if('target' in row) row.target=value;
+    else if('objective' in row) row.objective=value;
+    else if('glucidesTarget' in row) row.glucidesTarget=value;
+    else row.carbsTarget=value;
+    if(row.subtotal) row.subtotal.target=value;
+  }
+  return value;
+}
+
+function v36SectionWeight(row){
+  const duration=num(row?.durationMin ?? row?.duration ?? row?.elapsedMin ?? 0);
+  const dp=num(row?.dPlus ?? row?.dplus ?? row?.dp ?? row?.elevationGain ?? 0);
+  // Durée comme base, D+ comme bonus de difficulté.
+  return Math.max(1, duration + dp/100);
+}
+
+function v36GetGlobalNutritionTarget(planRows){
+  const explicit=num(
+    window.currentPlan?.nutritionTarget ??
+    window.currentPlan?.totalCarbsTarget ??
+    window.nutritionTarget ??
+    document.querySelector('[data-nutrition-target]')?.value
+  );
+  if(explicit>0)return explicit;
+  return (planRows||[]).reduce((s,r)=>s+v36NutritionTarget(r),0);
+}
+
+/*
+ * Recalcule uniquement les sections situées APRÈS la section modifiée.
+ * La valeur saisie manuellement est conservée.
+ * Le budget restant est redistribué sur les futures sections.
+ */
+function v36RebalanceFutureNutrition(rows,changedIndex){
+  if(!Array.isArray(rows)||changedIndex<0||changedIndex>=rows.length)return;
+
+  const totalTarget=v36GetGlobalNutritionTarget(rows);
+  if(!(totalTarget>0))return;
+
+  const prefix=rows.slice(0,changedIndex+1);
+  const future=rows.slice(changedIndex+1);
+  if(!future.length)return;
+
+  const prefixSum=prefix.reduce((s,r)=>s+v36NutritionTarget(r),0);
+  let remaining=Math.max(0,totalTarget-prefixSum);
+
+  const weights=future.map(v36SectionWeight);
+  const weightSum=weights.reduce((a,b)=>a+b,0);
+
+  future.forEach((row,i)=>{
+    const share=weightSum>0 ? remaining*weights[i]/weightSum : remaining/future.length;
+    v36SetNutritionValue(row,share);
+  });
+
+  // Corrige les éventuels arrondis sur la dernière section future.
+  const now=rows.reduce((s,r)=>s+v36NutritionTarget(r),0);
+  const correction=Math.round(totalTarget-now);
+  if(future.length && correction!==0){
+    const last=future[future.length-1];
+    v36SetNutritionValue(last,v36NutritionTarget(last)+correction);
+  }
+
+  if(typeof renderStrategy==='function')renderStrategy();
+  if(typeof renderNutrition==='function')renderNutrition();
+  if(typeof updateStrategyTable==='function')updateStrategyTable();
+  if(typeof renderChart==='function')renderChart();
+}
+
+
+/* V44 — temps de passage des ravitaillements, sans modifier le moteur de stratégie */
+function ravitoPassageInfo(r){
+  const totalDist = (Array.isArray(track)&&track.length) ? Number(track[track.length-1].dist) : Number(window.currentPlan?.at?.(-1)?.p?.dist||0);
+  const targetRaw = document.getElementById('targetTime')?.value || '';
+  let durationMin = Number(window.currentDuration)||0;
+  if(/^\d{1,2}:\d{2}$/.test(targetRaw)){
+    const parts=targetRaw.split(':').map(Number);
+    durationMin=(parts[0]||0)*60+(parts[1]||0);
+  }
+  const dist=Number(r?.dist)||0;
+  const elapsed=totalDist>0 ? elapsedAtDistanceTopo(dist,durationMin) : 0;
+  const start=document.getElementById('startTime')?.value||'00:00';
+  return {elapsed,clock:formatClock(start,elapsed)};
+}
+
+function generate(){
+  if(!track.length){alert("Importe d'abord une trace GPX.");return;}
+  const c=calc(), carbsH=+document.getElementById('carbs').value||0;
+  const targetTime=document.getElementById('targetTime').value||'04:00', parts=targetTime.split(':').map(Number);
+  const duration=(parts[0]||0)*60+(parts[1]||0);
+  if(duration<=0){alert("Indique un temps total visé.");return;}
+
+  nutrition=[]; const plan=[]; let prevDist=0;
+  let distances;
+  const isManual=document.getElementById('strategyMode')?.value==='manual';
+  if(isManual && splitPoints.length){
+    distances=splitPoints.map(p=>p.dist).filter(d=>d>50 && d<c.dist-50).sort((a,b)=>a-b);
+    distances.push(c.dist);
+  }else{
+    distances=splitDistances(duration);
+    splitPoints=distances.slice(0,-1).map(dist=>pointAt(dist)).filter(Boolean);
+    renderSplitList();
+  }
+  if(!distances.length || distances[distances.length-1]!==c.dist) distances.push(c.dist);
+  renderChart();
+  const topoProfile=pacingProfile(duration);
+
+  distances.forEach((dist,i)=>{
+    const p=pointAt(dist);
+    const elapsed=elapsedAtDistanceTopo(dist,duration);
+    const cumulativeTarget=Math.round(carbsH*elapsed/60);
+    const cumulativeAlready=plan.reduce((s,x)=>s+(x.actualCarbs||0),0);
+    const ids=chooseProductsForTarget(cumulativeTarget,cumulativeAlready);
+    const totals=nutritionTotals(ids);
+    nutrition.push({lat:p.lat,lon:p.lon,time:Math.round(elapsed),label:ids.length?formatProductCounts(ids):"—",productIds:ids});
+    plan.push({
+      t:elapsed,p,event:'',targetCarbs:cumulativeTarget-(plan.length?plan[plan.length-1].targetCumulative:0),
+      targetCumulative:cumulativeTarget,productIds:ids,actualCarbs:totals.carbs,actualCalories:totals.calories,
+      split:formatTime(elapsed),clock:formatClock(document.getElementById('startTime').value,elapsed),
+      km:dist/1000,elapsedMin:elapsed,dplus:dplusAtDistance(dist),
+      speed:topoAverageSpeedKmh(dist,elapsed),
+      subtotal:{carbs:0,calories:0,target:0},startDist:prevDist
+    });
+    prevDist=dist;
+  });
+  plan.forEach((x,i)=>x.subtotal=cumulativeTotals(plan,i));
+
+  const renderRows=()=>{
+    const items=[];
+    // Ligne de préparation au départ : produits nécessaires jusqu'au premier ravitaillement.
+    if(ravitos.length){
+      items.push({dist:0,type:'startCarry',carry:carryToNextRavito(-1,plan)});
+    }
+    plan.forEach((x,i)=>items.push({dist:x.p.dist,type:'split',i,x}));
+    ravitos.forEach((r,ri)=>items.push({dist:r.dist,type:'ravito',ri,r}));
+    items.sort((a,b)=>a.dist-b.dist);
+    let html='';
+    items.forEach(item=>{
+      if(item.type==='startCarry'){
+        html+=`<tr class="carry-row start-row"><td>0.0 <span class="section-km">(départ)</span></td><td>—</td><td>—</td><td>—</td><td><span class="carry-box">🟢 <b>${item.carry}</b><small>à emporter du départ jusqu'au premier ravitaillement</small></span></td><td>—</td><td>—</td><td>—</td><td>Départ</td><td>${(track[0]?.ele||0).toFixed(1)} m</td><td>—</td></tr>`;
+        return;
+      }
+      if(item.type==='ravito'){
+        const r=item.r, carry=carryToNextRavito(item.ri,plan), pass=ravitoPassageInfo(r);
+        html+=`<tr class="ravito-row" data-ravito-index="${item.ri}">
+          <td>${(r.dist/1000).toFixed(1)} <span class="section-km">(ravito)</span></td>
+          <td>${Math.round(dplusAtDistance(r.dist))} m</td>
+          <td><div class="metric-main">${formatDurationHM(pass.elapsed)}</div><div class="metric-sub">(temps de passage)</div></td>
+          <td>${pass.clock}</td>
+          <td><span class="carry-box">🔴 <b>${carry}</b><small> à emporter jusqu'au prochain ravitaillement</small></span></td>
+          <td>—</td><td>—</td><td>—</td><td><b>🔴 ${r.name}</b></td><td>${r.ele.toFixed(1)} m</td><td>—</td>
+        </tr>`;
+        return;
+      }
+      const x=item.x,i=item.i,s=x.subtotal,delta=s.carbs-s.target;
+      const sectionKm=((x.p.dist-(x.startDist||0))/1000);
+      const totals=nutritionTotals(x.productIds||[]);
+      html+=`<tr class="split-row" data-plan-index="${i}">
+        <td><button class="profile-btn" data-profile-index="${i}" title="Voir le profil de cette portion">${Math.round(x.km)} <span>(${Math.round(sectionKm)} km)</span></button></td>
+        <td><div class="metric-main">${Math.round(x.dplus)} m</div><div class="metric-sub">(+${Math.round(elevationDeltaBetween(x.startDist||0,x.p.dist).up)} m D+ · −${Math.round(elevationDeltaBetween(x.startDist||0,x.p.dist).down)} m D−)</div></td><td><div class="metric-main">${formatDurationHM(x.elapsedMin)}</div><div class="metric-sub">(${formatDurationHM(x.elapsedMin-(i?plan[i-1].elapsedMin:0))})</div></td><td>${x.clock}</td>
+        <td><div class="strategy-products" data-i="${i}">${strategyProductEditor(x.productIds||[])}</div><div class="small product-total">${Math.round(totals.carbs)} g de glucides · ${totals.calories} kcal</div></td>
+        <td><div class="metric-main">${Math.round(x.targetCarbs)} g</div><div class="metric-sub">(total course : ${Math.round(s.target)} g)</div><small>Glucides</small></td><td><div class="metric-main">${Math.round(totals.carbs)} g</div><div class="metric-sub">(total course : ${Math.round(s.carbs)} g)</div><small>Apport via la nutrition</small></td><td>${delta>=0?'+':''}${Math.round(delta)} g</td>
+        <td><input class="plan-event" data-i="${i}" value="${String(x.event||'').replace(/"/g,'&quot;')}" placeholder="Événement"></td>
+        <td>${Math.round(x.p.ele)} m</td><td>${Math.round(x.speed)} km/h</td>
+      </tr>`;
+    });
+    document.getElementById('plan').innerHTML=html;
+    document.querySelectorAll('.profile-btn').forEach(b=>b.onclick=()=>showPortionProfile(+b.dataset.profileIndex));
+  };
+  renderRows();
+
+  const refreshAll=()=>{
+    plan.forEach((x,j)=>x.subtotal=cumulativeTotals(plan,j));
+    renderRows();
+    bindStrategyEvents();
+    updateShoppingSummary();
+  };
+  const bindStrategyEvents=()=>{
+    document.querySelectorAll('.strategy-products').forEach(box=>{
+      const updateRow=()=>{
+        const i=+box.dataset.i,ids=[];
+        box.querySelectorAll('.sp-qty').forEach(q=>{
+          const n=Math.max(0,+q.value||0),ch=box.querySelector(`.sp-check[data-pid="${q.dataset.pid}"]`);
+          if(ch)ch.checked=n>0; for(let k=0;k<n;k++)ids.push(String(q.dataset.pid));
+        });
+        plan[i].productIds=ids; plan[i].actualCarbs=nutritionTotals(ids).carbs; plan[i].actualCalories=nutritionTotals(ids).calories;
+        if(nutrition[i])nutrition[i].productIds=ids;
+        refreshAll();
+      };
+      box.querySelectorAll('.sp-check').forEach(ch=>ch.onchange=()=>{const q=box.querySelector(`.sp-qty[data-pid="${ch.dataset.pid}"]`);if(q)q.value=ch.checked?Math.max(1,+q.value||0):0;updateRow()});
+      box.querySelectorAll('.sp-qty').forEach(q=>q.oninput=updateRow);
+    });
+    document.querySelectorAll('.plan-event').forEach(input=>input.oninput=()=>{const i=+input.dataset.i;if(plan[i])plan[i].event=input.value});
+  };
+  bindStrategyEvents();
+  window.currentPlan=plan; window.currentDuration=duration; window.currentCarbsH=carbsH;
+  updateShoppingSummary(); document.getElementById('totalcarbs').textContent=Math.round(duration/60*carbsH)+' g';
+  renderMap(); renderChart();
+  document.getElementById('msg').textContent=`Stratégie générée · durée ${formatDurationHM(duration)} · ${document.getElementById('strategyMode')?.value==='manual'?'mode manuel':'mode guidé'}.`;
+}
+
+
+document.getElementById('generate').onclick=generate;
+
+document.getElementById('gpx').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const rd=new FileReader();rd.onload=()=>{
+    try{
+      track=parseGPX(rd.result);splitPoints=[];renderSplitList();const c=calc();
+      if(line)map.removeLayer(line);
+      line=L.polyline(track.map(p=>[p.lat,p.lon]),{weight:5}).addTo(map);
+      map.fitBounds(line.getBounds(),{padding:[20,20]});
+      document.getElementById('dist').textContent=(c.dist/1000).toFixed(1)+' km';
+      document.getElementById('dplus').textContent=c.dplus.toFixed(1)+' m';
+      document.getElementById('maxalt').textContent=c.max.toFixed(1)+' m';
+      document.getElementById('statsCard').classList.remove('hidden');
+      renderChart();
+      document.getElementById('msg').textContent="Trace chargée. Ajoute les ravitaillements puis génère la stratégie.";
+    }catch(err){document.getElementById('msg').textContent=err.message}
+  };rd.readAsText(f);
+};
+
+
+function updateShoppingSummary(){
+  const box=document.getElementById('shoppingSummary');
+  if(!box)return;
+  const counts={};
+  (window.currentPlan||[]).forEach(x=>{
+    (x.productIds||[]).forEach(id=>{
+      const p=productById(id); if(!p)return;
+      counts[id]=(counts[id]||{p,qty:0,carbs:0,kcal:0});
+      counts[id].qty++;
+      counts[id].carbs+=p.carbs;
+      counts[id].kcal+=p.calories;
+    });
+  });
+  const rows=Object.values(counts);
+  if(!rows.length){box.textContent="Aucun produit affecté.";return;}
+  box.innerHTML=`<table><thead><tr><th>Produit</th><th>À acheter</th><th>Glucides (g)</th><th>Kcal</th></tr></thead><tbody>${
+    rows.map(x=>`<tr><td>${x.p.name}</td><td><b>${x.qty}</b> unité(s)</td><td>${x.carbs} g</td><td>${x.kcal} kcal</td></tr>`).join('')
+  }</tbody></table>`;
+}
+
+function strategyText(){
+  const c=calc(),h=(window.currentDuration||(+document.getElementById('hours').value*60))/60,
+        ch=window.currentCarbsH||+document.getElementById('carbs').value;
+  let out=`GPX NUTRITION PLANNER V4 — STRATÉGIE\n\n`;
+  out+=`Distance : ${(c.dist/1000).toFixed(1)} km\nD+ : ${Math.round(c.dplus)} m\nAltitude max : ${Math.round(c.max)} m\nTemps cible : ${h.toFixed(2)} h\nObjectif glucides : ${ch} g/h\nGlucides totaux : ${Math.round(h*ch)} g\n\n`;
+  out+=`RAVITAILLEMENTS\n`;
+  ravitos.forEach(r=>out+=`- ${r.name} — ${(r.dist/1000).toFixed(1)} km — ${Math.round(r.ele)} m\n`);
+  out+=`\nPRODUITS DISPONIBLES\n`;
+  selectedProducts().forEach(p=>out+=`- ${p.name} — ${p.carbs} g glucides/unité — ${p.calories} kcal/unité\n`);
+  out+=`\nPACING & NUTRITION\n`;
+  (window.currentPlan||[]).forEach(x=>{
+    const counts={};(x.productIds||[]).forEach(id=>{const p=productById(id);if(p)counts[p.name]=(counts[p.name]||0)+1;});
+    const names=Object.entries(counts).map(([n,q])=>`${q}× ${n}`).join(' + ');
+    out+=`${x.split} | ${x.km.toFixed(1)} km | ${Math.round(x.p.ele)} m | ${x.event||'—'} | ${x.targetCarbs} g | ${names||'À définir'}\n`;
+  });
+  return out;
+}
+
+function drawPdfHeader(doc,title){
+  doc.setFillColor(17,17,17);doc.rect(0,0,210,22,'F');
+  doc.setTextColor(255,255,255);doc.setFontSize(16);doc.text(title,12,14);
+  doc.setTextColor(22,22,22);doc.setFontSize(9);
+}
+
+function exportPDF(){
+  try{
+    if(!Array.isArray(track)||!track.length){
+      alert("Importe d'abord une trace GPX.");
+      return;
+    }
+    if(!window.jspdf||!window.jspdf.jsPDF){
+      alert("Le module PDF n'est pas chargé. Vérifie ta connexion internet puis recharge la page.");
+      return;
+    }
+
+    const {jsPDF}=window.jspdf;
+    const doc=new jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+    const W=210,H=297,M=10,U=W-2*M;
+
+    const num=v=>Number.isFinite(Number(v))?Number(v):0;
+    const fmt=v=>num(v).toFixed(1);
+    const esc=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();
+    const duration=v=>{
+      const mins=Math.max(0,Math.round(num(v)));
+      const h=Math.floor(mins/60),m=mins%60;
+      return `${String(h).padStart(2,'0')} h ${String(m).padStart(2,'0')}`;
+    };
+    const productName=id=>{
+      try{
+        if(typeof productById==='function'){
+          const p=productById(id);
+          return p&&p.name?p.name:'';
+        }
+      }catch(e){}
+      const p=(products||[]).find(q=>String(q.id)===String(id));
+      return p&&p.name?p.name:'';
+    };
+    const productCarbs=id=>{
+      const p=(products||[]).find(q=>String(q.id)===String(id));
+      return p?num(p.carbs):0;
+    };
+    const pageTitle=t=>{
+      doc.setFillColor(30,34,40);doc.rect(0,0,W,17,'F');
+      doc.setTextColor(255,255,255);doc.setFontSize(12);
+      doc.setFont(undefined,'bold');doc.text(esc(t),M,11);
+      doc.setTextColor(30,30,30);doc.setFont(undefined,'normal');
+    };
+    const footer=()=>{
+      doc.setFontSize(7);doc.setTextColor(120,120,120);
+      doc.text('GPX Nutrition Planner',M,H-6);
+      const page=doc.getNumberOfPages?doc.getNumberOfPages():1;
+      doc.text('Page '+page,W-M,H-6,{align:'right'});
+      doc.setTextColor(30,30,30);
+    };
+    const newPage=t=>{
+      footer();doc.addPage();pageTitle(t);return 25;
+    };
+    const wrap=(txt,x,y,w,lh=4)=>{
+      const lines=doc.splitTextToSize(esc(txt),w);
+      doc.text(lines,x,y);
+      return y+lh*lines.length;
+    };
+
+    const plan=Array.isArray(window.currentPlan)?window.currentPlan:[];
+    const ravs=Array.isArray(ravitos)?ravitos:[];
+    const totalKm=num(track[track.length-1].dist)/1000;
+    const elevations=track.map(p=>num(p.ele));
+    const maxAlt=elevations.length?Math.max(...elevations):0;
+    let dplus=0,dminus=0;
+    for(let i=1;i<track.length;i++){
+      const d=elevations[i]-elevations[i-1];
+      if(d>0)dplus+=d; else dminus-=d;
+    }
+    const carbH=num(window.currentCarbsH||document.getElementById('carbs')?.value);
+    const durationMin=num(window.currentDuration||(
+      num(document.getElementById('hours')?.value)*60+
+      num(document.getElementById('minutes')?.value)
+    ));
+
+    /* PAGE 1 — résumé + web profile */
+    pageTitle('Plan de course · résumé');
+    let y=25;
+    doc.setFontSize(10);doc.setFont(undefined,'bold');
+    doc.text('Métriques de la course',M,y);y+=7;
+    doc.setFont(undefined,'normal');doc.setFontSize(8.5);
+    const stats=[
+      `Distance : ${fmt(totalKm)} km`,
+      `Temps cible : ${duration(durationMin)}`,
+      `D+ : ${fmt(dplus)} m`,
+      `Altitude maximale : ${fmt(maxAlt)} m`,
+      `D- : ${fmt(dminus)} m`,
+      `Objectif glucides : ${Math.round(carbH)} g/h`
+    ];
+    stats.forEach((v,i)=>doc.text(v,M+(i%2)*92,y+Math.floor(i/2)*6));
+    y+=22;
+
+    doc.setFontSize(10);doc.setFont(undefined,'bold');
+    doc.text('Profil altimétrique',M,y);y+=5;
+    const canvas=document.getElementById('elevChart');
+    if(canvas && canvas.width && canvas.height){
+      try{
+        const img=canvas.toDataURL('image/png',1);
+        const ratio=canvas.width/canvas.height;
+        const iw=U,ih=Math.min(90,iw/ratio);
+        doc.addImage(img,'PNG',M,y,iw,ih,undefined,'FAST');
+        y+=ih+8;
+      }catch(e){
+        doc.setFont(undefined,'normal');doc.setFontSize(8);
+        y=wrap('Le profil n’a pas pu être intégré comme image, mais il reste disponible sur la page web.',M,y,U,4)+6;
+      }
+    }
+
+    /* PAGE 2+ — stratégie, ravitaillements aux vrais kilomètres */
+    y=newPage('Stratégie nutritionnelle');
+    doc.setFontSize(7);doc.setTextColor(85,85,85);
+    y=wrap('Dans Objectif et Apport : le chiffre principal correspond à la section ; le chiffre entre parenthèses correspond au cumul depuis le départ.',M,y,U,4)+5;
+
+
+    function v35PassageTime(x){
+      const raw=x?.time||x?.hour||x?.passage||x?.heure||x?.clockTime;
+      if(raw)return String(raw);
+      const mins=num(x?.elapsedMin||x?.elapsed||0);
+      if(typeof startTime==='string' && /^\d{1,2}:\d{2}$/.test(startTime)){
+        const [hh,mm]=startTime.split(':').map(Number);
+        const total=hh*60+mm+mins;
+        return `${String(Math.floor((total/60)%24)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+      }
+      return '—';
+    }
+    
+
+    function v36WebHour(row){
+      if(!row)return '—';
+      return String(row.heure ?? row.hour ?? row.clockTime ?? row.time ?? '—');
+    }
+    
+    const events=[];
+    plan.forEach((x,i)=>{
+      const km=num(x.km||x.p?.dist/1000);
+      events.push({km,type:'strategy',x,i});
+    });
+    ravs.forEach((r,i)=>{
+      const km=num(r.km||r.dist/1000);
+      events.push({km,type:'ravito',r,i});
+    });
+    events.sort((a,b)=>a.km-b.km);
+
+    /* V34 — ligne DÉPART en première position de la stratégie PDF */
+    if(y>H-42)y=newPage('Stratégie nutritionnelle');
+    doc.setFillColor(232,247,235);doc.setDrawColor(80,150,90);
+    doc.roundedRect(M,y-4,U,19,2,2,'FD');
+    doc.setTextColor(30,120,55);doc.setFont(undefined,'bold');doc.setFontSize(8);
+    doc.text('DÉPART',M+3,y+2);
+    doc.setTextColor(40,40,40);doc.setFont(undefined,'bold');doc.setFontSize(7);
+    let carryDepart='—';
+    try{
+      if(typeof carryToNextRavito==='function') carryDepart=carryToNextRavito(-1,plan)||'—';
+    }catch(e){}
+    doc.text(`km 0     ·    À emporter jusqu'au premier ravitaillement : ${esc(carryDepart)}`,M+30,y+2,{maxWidth:U-38});
+    y+=24;
+
+    events.forEach(ev=>{
+      if(y>H-50)y=newPage('Stratégie nutritionnelle · suite');
+
+      if(ev.type==='ravito'){
+        doc.setFillColor(252,235,235);doc.setDrawColor(190,40,40);
+        doc.roundedRect(M,y-4,U,19,2,2,'FD');
+        doc.setTextColor(175,30,30);doc.setFont(undefined,'bold');doc.setFontSize(8);
+        doc.text(`RAVITAILLEMENT · km ${fmt(ev.km)}`,M+3,y+2);
+        doc.setTextColor(45,45,45);doc.setFont(undefined,'normal');doc.setFontSize(7);
+        doc.text(esc(ev.r.name||'Ravitaillement'),M+63,y+2,{maxWidth:U-66});
+        const pass=ravitoPassageInfo(ev.r);
+        doc.text(`Temps de course : ${duration(pass.elapsed)}`,M+3,y+9);
+        doc.text(`Heure de passage estimée : ${pass.clock}`,M+90,y+2);
+        let carry='—';
+        try{
+          if(typeof carryToNextRavito==='function') carry=carryToNextRavito(ev.i,plan)||'—';
+        }catch(e){}
+        const carryLines=doc.splitTextToSize(`À emporter jusqu'au prochain ravitaillement : ${esc(carry)}`,U-6);
+        doc.setTextColor(175,30,30);doc.setFont(undefined,'bold');doc.setFontSize(7);
+        doc.text(carryLines,M+63,y+9);
+        y+=Math.max(28,19+carryLines.length*4);
+        return;
+      }
+
+      const x=ev.x,i=ev.i;
+      const prev=i>0?plan[i-1]:null;
+      const km=num(x.km||x.p?.dist/1000);
+      const prevKm=prev?num(prev.km||prev.p?.dist/1000):0;
+      const secKm=Math.max(0,km-prevKm);
+      const ids=Array.isArray(x.productIds)?x.productIds:[];
+      const counts={};
+      ids.forEach(id=>{
+        const n=productName(id);
+        if(n)counts[n]=(counts[n]||0)+1;
+      });
+      const prod=Object.entries(counts).map(([n,q])=>`${q}× ${n}`).join(' + ')||'—';
+      // Même source que le tableau web :
+      // objectif section = x.targetCarbs ; objectif cumulé = x.subtotal.target
+      // apport section = produits de la section ; apport cumulé = x.subtotal.carbs
+      // écart section = apport section - objectif section
+      const targetSection=num(x.targetCarbs);
+      const targetTotal=num(x.subtotal?.target);
+      const nutritionSection=num(nutritionTotals(x.productIds||[]).carbs);
+      const nutritionTotal=num(x.subtotal?.carbs);
+      const ecartSection=nutritionTotal-targetTotal;
+      const elapsed=num(x.elapsedMin||x.elapsed||0);
+      const prevElapsed=prev?num(prev.elapsedMin||prev.elapsed||0):0;
+      const sectionElev=elevationDeltaBetween(x.startDist||0,x.p?.dist||0);
+      const sectionDplus=num(sectionElev?.up);
+      const sectionDminus=num(sectionElev?.down);
+      // La colonne Heure du site web est x.clock.
+      const passageTime=String(x.clock||'—');
+
+      doc.setFillColor(i%2?250:244,246,248);
+      doc.roundedRect(M,y-4,U,28,2,2,'F');
+      doc.setTextColor(25,25,25);doc.setFont(undefined,'bold');doc.setFontSize(8);
+      doc.text(`KM ${fmt(km)}`,M+3,y+2);
+      doc.setFont(undefined,'bold');doc.setFontSize(7);
+      doc.text(`Produits à consommer: ${esc(prod)}`,M+103,y+20,{maxWidth:U-106});
+      doc.text(`Section : ${fmt(secKm)} km`,M+34,y+2);
+      doc.text(`Heure de passage estimée : ${passageTime}`,M+3,y+20);
+      doc.setFont(undefined,'normal');doc.setFontSize(7);
+      doc.text(`Dénivelé section : ${fmt(sectionDplus)} m D+ / ${fmt(sectionDminus)} m D- (D+ cumulé : ${fmt(x.dplus)} m)`,M+3,y+8);
+      doc.text(`Temps : ${duration(elapsed)} (${duration(Math.max(0,elapsed-prevElapsed))} temps section)`,M+3,y+14);
+      doc.text(`Objectif nutrition : ${Math.round(targetSection)} g de glucides (total course : ${Math.round(targetTotal)} g)`,M+103,y+2);
+
+      doc.text(`Apport nutrition : ${Math.round(nutritionSection)} g de glucides (total course : ${Math.round(nutritionTotal)} g)`,M+103,y+8,{maxWidth:U-106});
+      doc.text(`Écart avec la prévision : ${ecartSection>=0?'+':''}${Math.round(ecartSection)} g`,M+103,y+14);
+      y+=33;
+    });
+
+    footer();
+
+    /* Page dédiée aux ravitaillements */
+    doc.addPage();pageTitle('Ravitaillements');y=25;
+    doc.setFontSize(7.5);doc.setTextColor(80,80,80);
+    y=wrap("Les ravitaillements sont placés sur la trace GPX. Le contenu indique les produits à emporter depuis le départ ou depuis ce ravitaillement jusqu’au suivant.",M,y,U,4)+7;
+
+    const drawRavPdf=(title,kmText,passageText,content)=>{
+      const lines=doc.splitTextToSize(String(content||'—'),U-38);
+      const cardH=Math.max(36,28+lines.length*3.8);
+      if(y+cardH>H-14){footer();doc.addPage();pageTitle('Ravitaillements · suite');y=25;}
+      doc.setFillColor(252,238,238);doc.setDrawColor(190,45,45);
+      doc.roundedRect(M,y-5,U,cardH,2,2,'FD');
+      doc.setTextColor(170,30,30);doc.setFont(undefined,'bold');doc.setFontSize(8.5);
+      doc.text(title,M+4,y+2);
+      doc.setTextColor(70,70,70);doc.setFont(undefined,'normal');doc.setFontSize(7);
+      doc.text(kmText,M+4,y+8);
+      doc.text(passageText,M+4,y+13);
+      doc.setFont(undefined,'bold');doc.text("À emporter :",M+4,y+20);
+      doc.setFont(undefined,'normal');
+      doc.text(lines,M+35,y+20);
+      y+=cardH+6;
+    };
+
+    let carryStart='—';
+    try{if(typeof carryToNextRavito==='function')carryStart=carryToNextRavito(-1,plan)||'—';}catch(e){}
+    /* Départ en vert */
+    if(y>H-46){footer();doc.addPage();pageTitle('Ravitaillements · suite');y=25;}
+    doc.setFillColor(232,247,235);doc.setDrawColor(80,150,90);
+    doc.roundedRect(M,y-5,U,29,2,2,'FD');
+    doc.setTextColor(30,120,55);doc.setFont(undefined,'bold');doc.setFontSize(8.5);
+    doc.text('DÉPART',M+4,y+2);
+    doc.setTextColor(70,70,70);doc.setFont(undefined,'normal');doc.setFontSize(7);
+    doc.text('km 0 direction premier ravitaillement',M+4,y+8);
+    doc.setFont(undefined,'bold');doc.text('À emporter :',M+4,y+16);
+    doc.setFont(undefined,'normal');
+    const departLines=doc.splitTextToSize(String(carryStart||'—'),U-38);
+    doc.text(departLines,M+35,y+16);
+    y+=Math.max(33,24+departLines.length*3.5);
+
+    (Array.isArray(ravs)?ravs:[]).forEach((r,i)=>{
+      let carry='—';
+      try{if(typeof carryToNextRavito==='function')carry=carryToNextRavito(i,plan)||'—';}catch(e){}
+      const pass=ravitoPassageInfo(r);
+      drawRavPdf(
+        `RAVITAILLEMENT ${i+1}`,
+        `km ${fmt(num(r.dist||r.km*1000)/1000)} · ${r.name||'Ravitaillement'}`,
+        `Temps de passage : ${duration(pass.elapsed)} · Heure : ${pass.clock}`,
+        carry
+      );
+    });
+    footer();
+
+    /* Profils altimétriques des sections — version portrait lisible */
+    doc.addPage();pageTitle('Profils altimétriques des sections');y=25;
+    doc.setFontSize(7);doc.setTextColor(85,85,85);
+    y=wrap("Chaque visuel correspond à une section de la stratégie. L’axe horizontal indique le kilométrage réel de la course.",M,y,U,4)+6;
+
+    const slopeColorPdf=v=>{
+      const a=Math.abs(num(v));
+      if(a<5)return [46,125,50];
+      if(a<10)return [241,196,15];
+      if(a<15)return [243,156,18];
+      if(a<20)return [230,126,34];
+      return [192,57,43];
+    };
+
+    const drawSectionPdf=(pts,title)=>{
+      if(!pts || pts.length<2)return;
+      const boxH=56;
+      if(y+boxH+18>H-12){footer();doc.addPage();pageTitle('Profils altimétriques · suite');y=25;}
+
+      doc.setFont(undefined,'bold');doc.setFontSize(9);doc.setTextColor(35,35,35);
+      doc.text(title,M,y);
+
+      const top=y+6,bottom=top+boxH;
+      const d0=num(pts[0].dist),d1=num(pts[pts.length-1].dist);
+      const emin=Math.min(...pts.map(p=>num(p.ele)));
+      const emax=Math.max(...pts.map(p=>num(p.ele)));
+      const erange=Math.max(10,emax-emin);
+      const X=d=>M+(num(d)-d0)/Math.max(1,d1-d0)*U;
+      const Y=e=>bottom-8-(num(e)-emin)/erange*(boxH-15);
+
+      doc.setFillColor(248,249,250);doc.setDrawColor(215,218,222);
+      doc.roundedRect(M,top,U,boxH,2,2,'FD');
+
+      for(let g=0;g<=4;g++){
+        const gy=top+8+g*(boxH-15)/4;
+        const elev=emax-(emax-emin)*g/4;
+        doc.setDrawColor(218,221,224);doc.line(M,gy,W-M,gy);
+        doc.setFontSize(5.5);doc.setTextColor(105,105,105);
+        doc.text(fmt(elev)+' m',M-2,gy+2,{align:'right'});
+      }
+
+      for(let j=1;j<pts.length;j++){
+        const p0=pts[j-1],p1=pts[j];
+        const dd=Math.max(1,num(p1.dist)-num(p0.dist));
+        const slope=(num(p1.ele)-num(p0.ele))/dd*100;
+        const c=slopeColorPdf(slope);
+        const x0=X(p0.dist),x1=X(p1.dist),y0=Y(p0.ele),y1=Y(p1.ele);
+        const topY=Math.min(y0,y1);
+        doc.setFillColor(c[0],c[1],c[2]);
+        doc.rect(x0,topY,Math.max(.25,x1-x0),bottom-8-topY,'F');
+        doc.setDrawColor(c[0],c[1],c[2]);doc.setLineWidth(.45);
+        doc.line(x0,y0,x1,y1);
+      }
+
+      doc.setDrawColor(105,105,105);doc.setLineWidth(.3);
+      doc.line(M,bottom-8,W-M,bottom-8);
+
+      const k0=d0/1000,k1=d1/1000;
+      const ticks=[k0];
+      for(let k=Math.ceil(k0/2)*2;k<k1;k+=2){
+        if(k>k0+0.01 && k<k1-0.01)ticks.push(k);
+      }
+      if(k1>k0+0.01)ticks.push(k1);
+
+      doc.setFont(undefined,'normal');doc.setFontSize(6);doc.setTextColor(75,75,75);
+      ticks.forEach(k=>{
+        const xx=M+(k-k0)/Math.max(.001,k1-k0)*U;
+        doc.setDrawColor(120,120,120);doc.line(xx,bottom-8,xx,bottom-5);
+        doc.text(fmt(k)+" km",xx,bottom-1,{align:'center'});
+      });
+
+      doc.setFontSize(5.5);doc.setTextColor(100,100,100);
+      doc.text(fmt(emin)+" m",M+2,top+7);
+      doc.text(fmt(emax)+" m",M+2,top+3);
+
+      y=bottom+12;
+    };
+
+    plan.forEach((x,i)=>{
+      const a=i>0?num(plan[i-1].p?.dist||plan[i-1].km*1000):0;
+      const b=num(x.p?.dist||x.km*1000);
+      const pts=track.filter(p=>num(p.dist)>=a&&num(p.dist)<=b);
+      drawSectionPdf(pts,`Section ${i+1} · km ${fmt(a/1000)} - ${fmt(b/1000)}`);
+    });
+
+    doc.setFont(undefined,'bold');doc.setFontSize(7);doc.setTextColor(45,45,45);
+    doc.text("Pourcentage d’élévation du terrain",M,y+2);
+    const legendPdf=[
+      ["< 5 %",[46,125,50]],["5–10 %",[241,196,15]],["10–15 %",[243,156,18]],
+      ["15–20 %",[230,126,34]],["> 20 %",[192,57,43]]
+    ];
+    let lx=M;doc.setFont(undefined,'normal');
+    legendPdf.forEach(v=>{
+      doc.setFillColor(v[1][0],v[1][1],v[1][2]);doc.rect(lx,y+4,4,4,'F');
+      doc.text(v[0],lx+6,y+7);lx+=36;
+    });
+    footer();
+
+    /* GPS trace + passage/ravito points */
+    doc.addPage();pageTitle('Tracé GPS · points de passage et ravitaillements');y=25;
+    if(track.length>1){
+      const lats=track.map(p=>num(p.lat)),lons=track.map(p=>num(p.lon));
+      const minLa=Math.min(...lats),maxLa=Math.max(...lats),minLo=Math.min(...lons),maxLo=Math.max(...lons);
+      const sw=Math.max(1e-9,maxLo-minLo),sh=Math.max(1e-9,maxLa-minLa),mh=235;
+      const scale=Math.min(U/sw,mh/sh),ox=M+(U-sw*scale)/2,oy=y+(mh-sh*scale)/2;
+      doc.setDrawColor(50,50,50);doc.setLineWidth(.5);
+      for(let i=1;i<track.length;i++){
+        const x1=ox+(num(track[i-1].lon)-minLo)*scale;
+        const y1=oy+(maxLa-num(track[i-1].lat))*scale;
+        const x2=ox+(num(track[i].lon)-minLo)*scale;
+        const y2=oy+(maxLa-num(track[i].lat))*scale;
+        doc.line(x1,y1,x2,y2);
+      }
+      (Array.isArray(splitPoints)?splitPoints:[]).forEach((p,i)=>{
+        const px=ox+(num(p.lon)-minLo)*scale,py=oy+(maxLa-num(p.lat))*scale;
+        doc.setFillColor(25,95,190);doc.circle(px,py,1.8,'F');
+        doc.setFontSize(7);doc.setTextColor(25,95,190);doc.text(`P${i+1}`,px+3,py-2);
+      });
+      ravs.forEach(r=>{
+        const px=ox+(num(r.lon)-minLo)*scale,py=oy+(maxLa-num(r.lat))*scale;
+        doc.setFillColor(190,30,30);doc.circle(px,py,2,'F');
+        doc.setFontSize(7);doc.setTextColor(190,30,30);doc.text(`R ${fmt(num(r.dist||r.km*1000)/1000)} km`,px+3,py);
+      });
+    }
+    footer();
+
+    /* Purchases / stocks */
+    doc.addPage();pageTitle('Achats & stocks');y=25;
+    doc.setFontSize(9);doc.setFont(undefined,'bold');doc.text('Produits à prévoir',M,y);y+=7;
+    doc.setFont(undefined,'normal');doc.setFontSize(10);
+    const counts={};
+    plan.forEach(x=>{
+      (Array.isArray(x.productIds)?x.productIds:[]).forEach(id=>{
+        const name=productName(id);
+        if(name){
+          if(!counts[id])counts[id]={name,qty:0,carbs:productCarbs(id)};
+          counts[id].qty++;
+        }
+      });
+    });
+    Object.values(counts).forEach(v=>{
+      doc.text(`${v.name} : ${v.qty} unité(s) · ${Math.round(v.qty*v.carbs)} g de glucides`,M,y);
+      y+=6;
+      if(y>H-18){footer();doc.addPage();pageTitle('Achats & stocks · suite');y=25;}
+    });
+    if(!Object.keys(counts).length)doc.text('Aucun produit défini dans la stratégie.',M,y);
+    footer();
+
+    const input=document.getElementById('pdfName');
+    const raw=(input&&input.value?input.value:'strategie-course').trim();
+    const base=(raw||'strategie-course').replace(/[^a-zA-Z0-9À-ÿ _-]/g,'_');
+    doc.save(base.toLowerCase().endsWith('.pdf')?base:base+'.pdf');
+
+  }catch(err){
+    console.error('Erreur export PDF :',err);
+    alert("L'export PDF a rencontré une erreur. La page reste intacte. Recharge la page si nécessaire puis réessaie.");
+  }
+}
+document.getElementById('download').onclick=exportPDF;
+  </script>
+  <!-- ====================== V32: unified continue/stop flow for manual points and ravitaillements ====================== -->
+  <script>
+   /* V32: unified continue/stop flow for manual points and ravitaillements */
+(function(){
+  function askContinue(label){
+    return window.confirm(label + "\n\nOK = continuer à placer des points\nAnnuler = STOP");
+  }
+  window.v32AskContinue = askContinue;
+
+  /* Wrap the native prompt used by the two placement modes only when their
+     confirmation is explicitly requested by the application. */
+})();
+  </script>
+ <div id="manualProfileModal" class="manual-profile-modal" aria-hidden="true">
+  <div class="manual-profile-dialog" role="dialog" aria-modal="true" aria-labelledby="manualProfileTitle">
+    <div class="manual-profile-header">
+      <div>
+        <h2 id="manualProfileTitle">Placement manuel des points</h2>
+        <p>Clique directement sur le profil altimétrique pour placer tes points de découpage.</p>
+      </div>
+      <button type="button" id="closeManualProfileModal" class="manual-profile-close" aria-label="Fermer">×</button>
+    </div>
+
+    <div class="manual-profile-tip">
+      <b>Mode manuel actif.</b>
+      Survole le profil pour voir la position sur la trace, puis clique à l'endroit où tu veux créer une nouvelle section.
+      Après chaque point, tu pourras choisir de continuer.
+    </div>
+
+    <div id="manualProfileCanvasHost"></div>
+
+    <div class="manual-profile-actions">
+      <span id="manualProfileStatus">Clique sur le profil pour placer un point.</span>
+      <button type="button" class="secondary" id="finishManualProfile">Terminer</button>
+    </div>
+  </div>
+</div>
+
+<div id="ravitoMapModal" class="ravito-map-modal" aria-hidden="true">
+  <div class="ravito-map-dialog" role="dialog" aria-modal="true" aria-labelledby="ravitoMapTitle">
+    <div class="ravito-map-header">
+      <div>
+        <h2 id="ravitoMapTitle">Positionner un ravitaillement</h2>
+        <p>Déplace-toi sur la carte et clique directement sur la trace GPX.</p>
+      </div>
+      <button type="button" id="closeRavitoMapModal" class="manual-profile-close" aria-label="Fermer">×</button>
+    </div>
+    <div class="manual-profile-tip">
+      <b>Mode ravitaillement actif.</b> Le point sera automatiquement accroché au point GPX le plus proche.
+    </div>
+    <div id="ravitoMapHost"></div>
+    <div class="manual-profile-actions">
+      <span id="ravitoMapStatus">Clique sur la trace GPX pour placer le ravitaillement.</span>
+      <button type="button" class="secondary" id="finishRavitoMap">Terminer</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
+<!-- ====================== CORRECTIFS — légendes des profils ====================== -->
+<script>
+ function v22EnsurePopupLegends(){
+  const legend='<div class="v22-popup-legend">'+
+    '<span><i style="background:#2e7d32"></i>&lt; 5 %</span>'+
+    '<span><i style="background:#f1c40f"></i>5–10 %</span>'+
+    '<span><i style="background:#f39c12"></i>10–15 %</span>'+
+    '<span><i style="background:#e67e22"></i>15–20 %</span>'+
+    '<span><i style="background:#c0392b"></i>&gt; 20 %</span></div>';
+  document.querySelectorAll('.leaflet-popup-content,.profile-popup,.section-popup').forEach(el=>{
+    if(el.querySelector('.v22-popup-legend'))return;
+    if(el.querySelector('canvas,svg'))el.insertAdjacentHTML('beforeend',legend);
+  });
+}
+document.addEventListener('click',()=>setTimeout(v22EnsurePopupLegends,80));
+</script>
+<!-- ====================== CORRECTIFS — confirmation des points manuels ====================== -->
+<script>
+ (function(){
+  window.v24AskContinue=function(kind,yes,no){
+    const old=document.getElementById('v24Confirm');
+    if(old) old.remove();
+    const box=document.createElement('div');
+    box.id='v24Confirm'; box.className='v24-confirm';
+    box.innerHTML='<h3>'+(kind==='section'?'Point de découpage ajouté':'Ravitaillement ajouté')+
+      '</h3><p>'+(kind==='section'?'Voulez-vous continuer à poser des points de découpage sur le profil altimétrique ?':
+      'Voulez-vous continuer à poser des ravitaillements sur la trace GPX ?')+
+      '</p><div class="actions"><button id="v24Yes" class="primary">Oui, continuer</button><button id="v24No" class="stop">Non, stop</button></div>';
+    document.body.appendChild(box);
+    document.getElementById('v24Yes').onclick=function(){box.remove(); if(yes)yes();};
+    document.getElementById('v24No').onclick=function(){box.remove(); if(no)no();};
+  };
+
+  window.v24ContinueSection=function(){
+    if(typeof addingSplit!=='undefined') addingSplit=true;
+    const b=document.getElementById('startSplit');
+    if(b){b.classList.add('active');b.textContent='Positionner le prochain point';}
+  };
+  window.v24StopSection=function(){
+    if(typeof addingSplit!=='undefined') addingSplit=false;
+    const b=document.getElementById('startSplit');
+    if(b){b.classList.remove('active','selected');b.textContent='+ Positionner un point de découpage';}
+    if(typeof closeManualProfilePopup==='function') closeManualProfilePopup();
+  };
+
+  // For ravito placement, V23 commonly uses a flag named addingRavito/addRavito.
+  window.v24ContinueRavito=function(){
+    if(typeof addingRavito!=='undefined') addingRavito=true;
+    if(typeof addingFeed!=='undefined') addingFeed=true;
+
+    const b=document.getElementById('addRavito');
+    if(b){
+      b.classList.add('active');
+      b.textContent='Clique sur la trace pour choisir le ravitaillement';
+    }
+    const status=document.getElementById('ravitoMapStatus');
+    if(status) status.textContent='Clique sur la trace GPX pour placer le prochain ravitaillement.';
+  };
+
+  window.v24StopRavito=function(){
+    if(typeof addingRavito!=='undefined') addingRavito=false;
+    if(typeof addingFeed!=='undefined') addingFeed=false;
+    if(typeof closeRavitoPopup==='function') closeRavitoPopup();
+  };
+})();
+</script>
